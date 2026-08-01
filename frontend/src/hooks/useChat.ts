@@ -3,66 +3,103 @@ import type { Message } from "../types/chat";
 
 export default function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState<boolean>(false);
 
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
 
-    const userMessage: Message = {
+    const userTime = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    const userMsg: Message = {
       id: Date.now().toString(),
       sender: "user",
-      text,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      text: text,
+      timestamp: userTime,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-
+    // 1. Add the user message immediately
+    setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
+    // 2. Create a placeholder message for CRUZ's incoming streaming reply
+    const aiId = (Date.now() + 1).toString();
+    const aiTime = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    const initialAiMsg: Message = {
+      id: aiId,
+      sender: "assistant",
+      text: "",
+      timestamp: aiTime,
+    };
+
+    setMessages((prev) => [...prev, initialAiMsg]);
+
     try {
-      const response = await fetch("http://127.0.0.1:8000/chat", {
+      const response = await fetch("http://127.0.0.1:8000/chat/stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          message: text,
-        }),
+        body: JSON.stringify({ message: text }),
       });
 
-      const data = await response.json();
+      if (!response.ok || !response.body) {
+        throw new Error("Network response was not ok or readable stream missing");
+      }
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: "assistant",
-        text: data.reply,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
+      // Turn off typing dots as soon as the stream begins
+      setIsTyping(false);
 
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (err) {
-      console.error(err);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let done = false;
 
-      const errorMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        sender: "assistant",
-        text: "Backend connection failed.",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
+      // 3. Read chunks continuously from FastAPI -> Ollama
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
 
-      setMessages((prev) => [...prev, errorMessage]);
+        if (value) {
+          const chunkText = decoder.decode(value, { stream: true });
+
+          // Append each incoming token dynamically to CRUZ's message bubble
+          setMessages((prevMessages) =>
+            prevMessages.map((msg) =>
+              msg.id === aiId ? { ...msg, text: msg.text + chunkText } : msg
+            )
+          );
+        }
+      }
+
+      // Flush any buffered multi-byte characters left in the decoder
+      const finalChunk = decoder.decode();
+      if (finalChunk) {
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg.id === aiId ? { ...msg, text: msg.text + finalChunk } : msg
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Failed to stream AI response:", error);
+      setIsTyping(false);
+
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.id === aiId
+            ? { ...msg, text: "Backend connection failed." }
+            : msg
+        )
+      );
     }
-
-    setIsTyping(false);
   };
 
   return {

@@ -14,3 +14,7 @@ OLLAMA_MODEL = os.getenv(
     "OLLAMA_MODEL",
     "qwen2.5:3b",
 )
+
+# How many past messages (user + assistant combined) to keep per session
+# for short-term conversation memory. 20 ≈ last 10 exchanges.
+MEMORY_WINDOW_SIZE = int(os.getenv("MEMORY_WINDOW_SIZE", 20))
