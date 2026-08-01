@@ -1,0 +1,60 @@
+.header{
+
+    height:90px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:0 35px;
+
+    background:#262626;
+}
+
+.header-left{
+
+    display:flex;
+
+    gap:18px;
+
+    align-items:center;
+}
+
+.bot-icon{
+
+    width:55px;
+
+    height:55px;
+
+    background:#df4f83;
+
+    border-radius:15px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:24px;
+}
+
+.header p{
+
+    color:#999;
+}
+
+.menu-btn{
+
+    background:none;
+
+    border:none;
+
+    color:white;
+
+    font-size:30px;
+
+    cursor:pointer;
+}
