@@ -12,6 +12,9 @@ export default function MainLayout() {
     messages,
     sendMessage,
     isTyping,
+    connected,
+    voiceState,
+    startVoiceTurn,
   } = useChat();
 
   return (
@@ -22,14 +25,14 @@ export default function MainLayout() {
         <Header />
 
         <div className="chat-area">
-          <ChatWindow
-            messages={messages}
-            isTyping={isTyping}
-          />
+          <ChatWindow messages={messages} isTyping={isTyping} />
         </div>
 
         <ChatInput
           onSend={sendMessage}
+          connected={connected}
+          voiceState={voiceState}
+          onStartVoiceTurn={startVoiceTurn}
         />
       </main>
     </div>

@@ -51,23 +51,15 @@
     },
     {
       "role": "user",
-      "content": "hi"
+      "content": "Hi, are you right now?"
     },
     {
       "role": "assistant",
-      "content": "CRUZ here. What's up? MCA project in full swing or Free Fire streams heating up?"
+      "content": "CRUZ here! What's up? MCA project or main character moment in ranked today?"
     },
     {
       "role": "user",
-      "content": "how are you"
-    },
-    {
-      "role": "assistant",
-      "content": "I'm cruisin', how about you? Need a quick fix for something, or just hangin' around?"
-    },
-    {
-      "role": "user",
-      "content": "Can you or you beat me?"
+      "content": "yuup"
     }
   ]
 }

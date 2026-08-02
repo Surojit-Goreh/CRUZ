@@ -211,3 +211,23 @@ height:38px;
 }
 
 }
+/* Phase 5.5: live voice status on the mic button */
+
+.input-icon.mic-active {
+    color: #8b5cf6;
+    background: rgba(139, 92, 246, .15);
+    animation: mic-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, .35); }
+    50% { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0); }
+}
+
+.voice-status {
+    max-width: 950px;
+    margin: 8px auto 0;
+    text-align: center;
+    font-size: 13px;
+    color: #b9b9b9;
+}
