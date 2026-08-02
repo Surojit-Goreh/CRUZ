@@ -51,23 +51,23 @@
     },
     {
       "role": "user",
-      "content": "Hello. What is your name?"
-    },
-    {
-      "role": "assistant",
-      "content": "CRUZ here. How's Fire today? What's the latest map you guys been playing?"
-    },
-    {
-      "role": "user",
-      "content": "Hello, how are you?"
-    },
-    {
-      "role": "assistant",
-      "content": "Hey there! MIA from Free Fire for a bit, what can I do for you today?"
-    },
-    {
-      "role": "user",
       "content": "hi"
+    },
+    {
+      "role": "assistant",
+      "content": "CRUZ here. What's up? MCA project in full swing or Free Fire streams heating up?"
+    },
+    {
+      "role": "user",
+      "content": "how are you"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm cruisin', how about you? Need a quick fix for something, or just hangin' around?"
+    },
+    {
+      "role": "user",
+      "content": "Can you or you beat me?"
     }
   ]
 }
