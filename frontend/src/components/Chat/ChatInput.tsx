@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { Paperclip, Mic, SendHorizontal } from "lucide-react";
 
+import { useChat } from "../../context/ChatContext";
+
 import "./ChatInput.css";
 
 interface Props {
@@ -8,6 +10,8 @@ interface Props {
 }
 
 export default function ChatInput({ onSend }: Props) {
+  const { triggerTurn, connected, voiceState } = useChat();
+
   const [text, setText] = useState("");
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -63,7 +67,19 @@ export default function ChatInput({ onSend }: Props) {
           className="chat-textarea"
         />
 
-        <button className="input-icon" type="button">
+        <button
+          className="input-icon"
+          type="button"
+          onClick={triggerTurn}
+          disabled={!connected || voiceState !== "idle"}
+          title={
+            !connected
+              ? "Voice server not connected"
+              : voiceState !== "idle"
+              ? "Voice assistant is busy"
+              : "Start voice conversation"
+          }
+        >
           <Mic size={22} />
         </button>
 
