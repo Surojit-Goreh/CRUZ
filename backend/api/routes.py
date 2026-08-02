@@ -8,6 +8,7 @@ from brain.llm import (
     generate_response,
     generate_stream,
 )
+from memory.long_term_memory import CATEGORIES, long_term_memory
 from memory.memory_manager import memory_manager, DEFAULT_SESSION_ID
 
 router = APIRouter()
@@ -16,6 +17,12 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
+
+
+class FactUpsert(BaseModel):
+    category: str
+    key: str
+    value: str
 
 
 @router.get("/")
@@ -71,3 +78,39 @@ def chat_reset(session_id: Optional[str] = None):
         "status": "cleared",
         "session_id": session_id or DEFAULT_SESSION_ID,
     }
+
+
+@router.get("/memory")
+def list_memory():
+    return {"facts": long_term_memory.get_all_facts()}
+
+
+@router.get("/memory/{category}")
+def list_memory_by_category(category: str):
+    return {"facts": long_term_memory.get_facts_by_category(category)}
+
+
+@router.post("/memory")
+def upsert_memory(fact: FactUpsert):
+    if fact.category not in CATEGORIES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"category must be one of: {', '.join(CATEGORIES)}",
+        )
+
+    long_term_memory.save_fact(fact.category, fact.key, fact.value)
+    return {"status": "saved", "category": fact.category, "key": fact.key, "value": fact.value}
+
+
+@router.delete("/memory/{category}/{key}")
+def forget_memory(category: str, key: str):
+    deleted = long_term_memory.delete_fact(category, key)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Fact not found")
+    return {"status": "forgotten", "category": category, "key": key}
+
+
+@router.delete("/memory")
+def forget_all_memory():
+    long_term_memory.delete_all()
+    return {"status": "wiped"}

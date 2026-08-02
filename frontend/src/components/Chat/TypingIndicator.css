@@ -13,28 +13,76 @@
     background: #2a2a2a;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
 }
 
-.typing-bubble .dot {
-    width: 8px;
-    height: 8px;
+.typing-shimmer-text {
+    font-size: 16px;
+    font-weight: 500;
+    white-space: nowrap;
+    background: linear-gradient(
+        90deg,
+        #7a7a7a 0%,
+        #7a7a7a 35%,
+        #ffffff 50%,
+        #7a7a7a 65%,
+        #7a7a7a 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation:
+        shimmerSweep 1.8s linear infinite,
+        phraseIn 0.35s ease;
+}
+
+@keyframes shimmerSweep {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes phraseIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.typing-dots {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.typing-dots .dot {
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: #8b5cf6;
+    background: #ff2d84;
     display: inline-block;
     animation: typingBounce 1.4s infinite ease-in-out both;
 }
 
-.typing-bubble .dot:nth-child(1) {
+.typing-dots .dot:nth-child(1) {
     animation-delay: -0.32s;
 }
 
-.typing-bubble .dot:nth-child(2) {
+.typing-dots .dot:nth-child(2) {
     animation-delay: -0.16s;
 }
 
-.typing-bubble .dot:nth-child(3) {
+.typing-dots .dot:nth-child(3) {
     animation-delay: 0s;
 }
 
@@ -46,6 +94,6 @@
     40% {
         transform: scale(1.1);
         opacity: 1;
-        background: #a78bfa;
+        background: #ff4f8b;
     }
 }
