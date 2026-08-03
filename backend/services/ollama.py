@@ -17,6 +17,7 @@ async def chat(messages):
         "model": OLLAMA_MODEL,
         "messages": messages,
         "stream": False,
+        "keep_alive": "30m",
     }
 
     async with httpx.AsyncClient(timeout=120) as client:
@@ -48,6 +49,7 @@ async def chat_with_tools(messages, tools=None):
         "model": OLLAMA_MODEL,
         "messages": messages,
         "stream": False,
+        "keep_alive": "30m",
     }
     if tools:
         payload["tools"] = tools
@@ -76,6 +78,7 @@ async def stream_chat(messages):
         "model": OLLAMA_MODEL,
         "messages": messages,
         "stream": True,
+        "keep_alive": "30m",
     }
 
     async with httpx.AsyncClient(timeout=None) as client:

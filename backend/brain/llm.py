@@ -1,4 +1,5 @@
 import asyncio
+from typing import Optional
 
 from brain.prompt_builder import build_prompt
 from memory.extractor import extract_facts
@@ -46,17 +47,16 @@ async def _remember(user_message: str) -> None:
         pass
 
 
-async def _run_with_tools(messages: list) -> str:
+async def run_tool_pipeline(messages: list) -> Optional[str]:
     """
-    Sends the conversation to the model with the file-tool schemas
-    attached. If the model asks to call a tool, runs it locally through
-    the executor and feeds the result back for a follow-up turn —
-    repeating until the model responds with plain text, or
+    Executes the tool-calling loop. If the model asks to call a tool, runs it
+    locally through the executor and appends both the tool call and tool result
+    to `messages` — repeating until the model makes no more tool calls, or
     MAX_TOOL_ITERATIONS is hit.
 
-    `messages` is mutated in place (tool-call turns get appended to it)
-    so the final list — including the tool exchange — is what's worth
-    logging/debugging if something looks off.
+    Returns:
+      - The response content string if the model answered directly on round 0 (no tools called).
+      - None if tool calls were executed, indicating `messages` now contains tool results.
     """
     for round_num in range(MAX_TOOL_ITERATIONS):
         message = await chat_with_tools(messages, tools=ALL_TOOL_SCHEMAS)
@@ -64,15 +64,9 @@ async def _run_with_tools(messages: list) -> str:
 
         if not tool_calls:
             if round_num == 0:
-                # The model answered in plain text on the very first
-                # round, with no tool call at all. Logged at INFO so you
-                # can check cruz.log after a turn like "delete X" and
-                # confirm whether CRUZ actually reached for a tool or
-                # just talked about it — if you expected a tool call and
-                # don't see one logged here, the model chose not to call
-                # it (prompt/model issue), not a wiring bug.
                 logger.info("model answered without calling any tool")
-            return message.get("content", "")
+                return message.get("content", "")
+            return None
 
         tool_names = [c.get("function", {}).get("name") for c in tool_calls]
         logger.info(f"round {round_num}: model called tool(s) {tool_names}")
@@ -80,14 +74,11 @@ async def _run_with_tools(messages: list) -> str:
         messages.append(message)
         messages.extend(run_tool_calls(tool_calls))
 
-    # Model kept requesting tools past the limit — cut it off and force
-    # a plain answer with whatever it's learned from the tool results so far.
-    logger.warning(f"hit MAX_TOOL_ITERATIONS ({MAX_TOOL_ITERATIONS}), forcing a final answer")
-    final_reply = await chat(messages)
-    return final_reply
+    logger.warning(f"hit MAX_TOOL_ITERATIONS ({MAX_TOOL_ITERATIONS})")
+    return None
 
 
-async def generate_response(user_message: str, session_id: str = DEFAULT_SESSION_ID):
+async def generate_response(user_message: str, session_id: str = DEFAULT_SESSION_ID) -> str:
     """
     Normal (non-streaming) response, with short-term + long-term memory
     and file-operation tool calling.
@@ -96,7 +87,11 @@ async def generate_response(user_message: str, session_id: str = DEFAULT_SESSION
     facts = long_term_memory.get_all_facts()
     messages = build_prompt(user_message, history, facts)
 
-    reply = await _run_with_tools(messages)
+    initial_reply = await run_tool_pipeline(messages)
+    if initial_reply is not None:
+        reply = initial_reply
+    else:
+        reply = await chat(messages)
 
     memory_manager.add_message(session_id, "user", user_message)
     memory_manager.add_message(session_id, "assistant", reply)
@@ -108,28 +103,24 @@ async def generate_response(user_message: str, session_id: str = DEFAULT_SESSION
 
 async def generate_stream(user_message: str, session_id: str = DEFAULT_SESSION_ID):
     """
-    Streaming response, with short-term + long-term memory.
-
-    Tool calling is NOT wired into streaming yet — Ollama can stream a
-    tool-calling turn, but the intermediate "call a tool, wait, then
-    stream the real answer" flow doesn't map cleanly onto a single
-    token stream. Typed/streamed chat gets plain answers for now;
-    generate_response() (used by voice) gets file-tool access. Worth
-    revisiting if streamed tool use becomes important later.
-
-    The full reply has to be buffered as it streams out, because we only
-    know what CRUZ actually said once the last chunk arrives — that's
-    what gets saved to memory, not the individual chunks.
+    Streaming response, with short-term + long-term memory and file-operation
+    tool calling. Fast-paths non-tool responses to avoid duplicate LLM calls.
     """
     history = memory_manager.get_messages(session_id)
     facts = long_term_memory.get_all_facts()
     messages = build_prompt(user_message, history, facts)
 
+    initial_reply = await run_tool_pipeline(messages)
+
     full_reply = ""
 
-    async for chunk in stream_chat(messages):
-        full_reply += chunk
-        yield chunk
+    if initial_reply is not None:
+        full_reply = initial_reply
+        yield initial_reply
+    else:
+        async for chunk in stream_chat(messages):
+            full_reply += chunk
+            yield chunk
 
     memory_manager.add_message(session_id, "user", user_message)
     memory_manager.add_message(session_id, "assistant", full_reply)

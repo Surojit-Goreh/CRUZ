@@ -1,0 +1,16 @@
+# Ignore runtime data files so WatchFiles reloader doesn't restart/shutdown uvicorn during startup or database writes
+data/
+data/*
+data/**
+data/workspace
+data/workspace/*
+data/workspace/**
+workspace/
+workspace/*
+workspace/**
+logs/
+*.db
+*.sqlite
+*.json
+*.log
+__pycache__/

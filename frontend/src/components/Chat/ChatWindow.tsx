@@ -24,8 +24,6 @@ export default function ChatWindow({ messages, isTyping }: Props) {
         <ChatMessage key={message.id} message={message} />
       ))}
 
-      {isTyping && <TypingIndicator />}
-
       <div ref={bottomRef} />
     </div>
   );

@@ -21,19 +21,31 @@ BLOCKED_EXTENSIONS = {".exe", ".bat", ".cmd", ".ps1", ".sh", ".msi", ".scr", ".v
 MAX_FILE_BYTES = 25 * 1024 * 1024  # 25 MB
 
 
-def safe_path(relative_path: str) -> Path:
+def safe_path(relative_path: str, resolve_existing_filename: bool = True) -> Path:
     """
     Resolve a path the LLM supplied against WORKSPACE_ROOT and guarantee
-    the result cannot escape it — blocks '..' traversal, absolute paths,
-    drive-letter switches, symlink tricks, etc.
+    the result cannot escape it — blocks '..' traversal, absolute paths
+    outside workspace, drive-letter switches, symlink tricks, etc.
 
-    Every function in tools/files.py calls this before touching disk.
+    If a plain filename (e.g. 'surojit.py') is supplied and does not exist
+    at WORKSPACE_ROOT, but exists uniquely within a workspace subdirectory,
+    it automatically resolves to that existing file.
     """
     if relative_path is None or str(relative_path).strip() == "":
         raise UnsafePathError("Path is empty.")
 
-    candidate = (WORKSPACE_ROOT / relative_path).resolve()
+    p = Path(relative_path)
     root = WORKSPACE_ROOT.resolve()
+
+    if p.is_absolute():
+        candidate = p.resolve()
+    else:
+        candidate = (WORKSPACE_ROOT / relative_path).resolve()
+
+    if resolve_existing_filename and not p.is_absolute() and len(p.parts) == 1 and not candidate.exists():
+        matches = [f for f in root.rglob(p.name) if f.is_file()]
+        if len(matches) == 1:
+            candidate = matches[0].resolve()
 
     try:
         candidate.relative_to(root)

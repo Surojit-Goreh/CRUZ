@@ -1,6 +1,6 @@
 import "./ChatMessage.css";
-
 import { Bot, User } from "lucide-react";
+import TypingIndicator from "./TypingIndicator";
 
 export interface Message {
   id: string;
@@ -15,6 +15,10 @@ type Props = {
 
 export default function ChatMessage({ message }: Props) {
   const isUser = message.sender === "user";
+
+  if (!isUser && message.text === "") {
+    return <TypingIndicator />;
+  }
 
   return (
     <div

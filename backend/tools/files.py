@@ -112,7 +112,9 @@ def rename_path(path: str, new_name: str) -> dict:
     if "/" in new_name or "\\" in new_name:
         return {"success": False, "error": "new_name must be a plain name, not a path."}
 
-    destination = target.parent / new_name
+    destination = safe_path(str(target.parent / new_name))
+    ensure_extension_allowed(destination)
+
     if destination.exists():
         return {"success": False, "error": f"'{new_name}' already exists."}
 
@@ -207,7 +209,7 @@ def extract_zip(zip_name: str, destination: str = ".") -> dict:
         resolved_dst = dst.resolve()
         for member in zf.namelist():
             member_path = (dst / member).resolve()
-            if not str(member_path).startswith(str(resolved_dst)):
+            if not member_path.is_relative_to(resolved_dst):
                 return {"success": False, "error": f"Unsafe entry in zip: '{member}'."}
         zf.extractall(dst)
 
