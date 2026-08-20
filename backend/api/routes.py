@@ -10,6 +10,9 @@ from brain.llm import (
 )
 from memory.long_term_memory import CATEGORIES, long_term_memory
 from memory.memory_manager import memory_manager, DEFAULT_SESSION_ID
+from utils.logger import get_logger
+
+logger = get_logger("api.routes")
 
 router = APIRouter()
 
@@ -50,9 +53,10 @@ async def chat(request: ChatRequest):
         }
 
     except Exception as e:
+        logger.exception("chat request failed")
         raise HTTPException(
             status_code=500,
-            detail=str(e),
+            detail="Something went wrong processing your message. Check server logs for details.",
         )
 
 
@@ -61,8 +65,12 @@ async def chat_stream(request: ChatRequest):
     session_id = request.session_id or DEFAULT_SESSION_ID
 
     async def event_generator():
-        async for chunk in generate_stream(request.message, session_id):
-            yield chunk
+        try:
+            async for chunk in generate_stream(request.message, session_id):
+                yield chunk
+        except Exception:
+            logger.exception("chat stream failed")
+            yield "\n\n[CRUZ hit an error generating a response. Check server logs for details.]"
 
     return StreamingResponse(
         event_generator(),

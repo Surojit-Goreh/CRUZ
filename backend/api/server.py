@@ -1,3 +1,12 @@
+import os
+import sys
+import asyncio
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -39,3 +48,14 @@ app.state.voice_manager = voice_manager
 # Voice WebSocket
 # -----------------------------
 app.include_router(voice_ws_router)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "api.server:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+        reload_excludes=["data/*", "*.wav", "*.pyc", "*.bin"],
+    )

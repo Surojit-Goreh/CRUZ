@@ -1,48 +1,87 @@
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 html,
 body,
 #root {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .app {
-    width: 100vw;
-    height: 100vh;
-
-    display: flex;
-
-    background: #171717;
-
-    color: white;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  background: var(--surface-0);
+  color: var(--text-primary);
 }
 
 .main {
-    flex: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-2);
+  background-image: radial-gradient(
+    ellipse at 30% 50%,
+    rgba(0, 210, 255, 0.05) 0%,
+    rgba(124, 92, 252, 0.04) 40%,
+    transparent 75%
+  );
+  position: relative;
+}
 
-    display: flex;
+/* ── Two-Column Split Layout ── */
+.content-split {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  width: 100%;
+  height: calc(100vh - 70px);
+}
 
-    flex-direction: column;
+/* Left Column (Red Box in screenshot) — AI Orb Stage */
+.orb-column {
+  flex: 1.1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--border-subtle);
+  position: relative;
+  overflow: hidden;
+}
 
-    overflow: hidden;
-
-    background: #1f1f1f;
+/* Right Column (Green Box in screenshot) — Chat & Input */
+.chat-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: rgba(13, 13, 20, 0.35);
 }
 
 .chat-area {
-    flex: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
 
-    display: flex;
-
+/* Responsive Collapsing for Small Screens */
+@media (max-width: 960px) {
+  .content-split {
     flex-direction: column;
-
-    overflow: hidden;
-
-    width: 100%;
+  }
+  .orb-column {
+    height: 280px;
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
 }

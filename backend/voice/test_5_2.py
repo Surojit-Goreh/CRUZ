@@ -1,11 +1,17 @@
 import asyncio
-from .voice_manager import VoiceManager
+import os
+import sys
+
+# Ensure backend root is on sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from voice.voice_manager import VoiceManager
 
 async def main():
-    vm = VoiceManager(stt_model="base.en")
+    vm = VoiceManager()
 
-    input("Press ENTER to start recording (5 seconds)...")
-    result = await vm.run_turn(duration_seconds=5, save_debug_audio=True)
+    input("Press ENTER to start speaking (Cruz will listen until you stop talking)...")
+    result = await vm.run_turn(duration_seconds=None, save_debug_audio=True)
 
     print("\n" + "=" * 40)
     if result["success"]:

@@ -1,0 +1,60 @@
+.ai-blob-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 24px;
+  user-select: none;
+}
+
+/* ── Stage Area ── */
+.blob-stage {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.3s var(--ease-out);
+}
+
+.blob-stage:hover {
+  transform: scale(1.03);
+}
+
+.blob-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Title & Status Info ── */
+.blob-info {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.blob-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #00d2ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  margin-bottom: 6px;
+}
+
+.blob-status {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+}

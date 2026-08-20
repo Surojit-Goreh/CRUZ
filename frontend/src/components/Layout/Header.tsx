@@ -1,33 +1,58 @@
 import "../../styles/components/header.css";
+import { MoreHorizontal, PanelLeft, Sparkles } from "lucide-react";
 
-function Header() {
+interface Props {
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
+  orbStageOpen?: boolean;
+  onToggleOrbStage?: () => void;
+}
+
+export default function Header({
+  sidebarOpen,
+  onToggleSidebar,
+  orbStageOpen = true,
+  onToggleOrbStage,
+}: Props) {
   return (
     <header className="header">
 
       <div className="header-left">
+        {/* Toggle Sidebar Icon Button */}
+        <button
+          className="header-icon-btn"
+          onClick={onToggleSidebar}
+          title={sidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
+          type="button"
+        >
+          <PanelLeft size={18} />
+        </button>
 
-        <div className="bot-icon">
-            🤖
-        </div>
+        <div className="header-orb" />
 
-        <div>
+        <h2>CRUZ</h2>
 
-          <h2>CRUZ</h2>
-
-          <p>Your Personal AI Assistant</p>
-
-        </div>
-
+        <span className="status-dot" title="Online" />
       </div>
 
-      <button className="menu-btn">
+      <div className="header-right">
+        {/* Toggle 3D Orb Stage */}
+        {onToggleOrbStage && (
+          <button
+            className={`header-icon-btn ${orbStageOpen ? "active" : ""}`}
+            onClick={onToggleOrbStage}
+            title={orbStageOpen ? "Hide 3D AI Orb" : "Show 3D AI Orb"}
+            type="button"
+          >
+            <Sparkles size={18} />
+          </button>
+        )}
 
-        ⋯
-
-      </button>
+        <button className="menu-btn" title="More options" type="button">
+          <MoreHorizontal size={18} />
+        </button>
+      </div>
 
     </header>
   );
 }
-
-export default Header;

@@ -1,6 +1,4 @@
 import "./ChatMessage.css";
-import { Bot, User } from "lucide-react";
-import TypingIndicator from "./TypingIndicator";
 
 export interface Message {
   id: string;
@@ -16,20 +14,14 @@ type Props = {
 export default function ChatMessage({ message }: Props) {
   const isUser = message.sender === "user";
 
-  if (!isUser && message.text === "") {
-    return <TypingIndicator />;
+  if (!message.text || message.text.trim() === "") {
+    return null;
   }
 
   return (
     <div
       className={`message-row ${isUser ? "user-row" : "assistant-row"}`}
     >
-      {!isUser && (
-        <div className="message-avatar assistant-avatar">
-          <Bot size={20} />
-        </div>
-      )}
-
       <div className="message-wrapper">
         <div
           className={`message-bubble ${
@@ -43,12 +35,6 @@ export default function ChatMessage({ message }: Props) {
           {message.timestamp}
         </span>
       </div>
-
-      {isUser && (
-        <div className="message-avatar user-avatar">
-          <User size={20} />
-        </div>
-      )}
     </div>
   );
 }

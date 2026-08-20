@@ -2,7 +2,8 @@ from .audio import record_audio, save_wav
 from .speech_to_text import SpeechToText
 
 def main():
-    stt = SpeechToText(model_name="base.en")
+    from config import WHISPER_MODEL
+    stt = SpeechToText(model_name=WHISPER_MODEL)
 
     input("Press ENTER to start recording (5 seconds)...")
     audio = record_audio(duration_seconds=5)

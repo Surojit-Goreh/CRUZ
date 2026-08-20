@@ -167,3 +167,199 @@ FILE_TOOL_SCHEMAS = [
         },
     },
 ]
+
+BROWSER_TOOL_SCHEMAS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "open_url",
+            "description": "Open a website URL in CRUZ's browser.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "URL or domain to navigate to (e.g. 'https://github.com')."},
+                },
+                "required": ["url"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_web",
+            "description": "Search Google or YouTube for queries, topics, songs, videos, or articles.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query keywords (e.g. 'python tutorial' or 'sitare song')."},
+                    "engine": {"type": "string", "description": "Search engine ('google', 'youtube', or 'duckduckgo'). Defaults to google."},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_page",
+            "description": "Extract readable text content from the current active browser page.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "max_chars": {"type": "integer", "description": "Maximum characters to return. Defaults to 8000."},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "click_element",
+            "description": "Click a button, link, or element on the current browser page by visible text or role.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target": {"type": "string", "description": "Visible text, button label, or link text to click (e.g. 'Sign In' or 'Search')."},
+                },
+                "required": ["target"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "type_text",
+            "description": "Enter text into an input field, search box, or form on the active browser page.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target": {"type": "string", "description": "Field label, placeholder, or selector (e.g. 'Search' or 'Username')."},
+                    "text": {"type": "string", "description": "Text to enter into the field."},
+                },
+                "required": ["target", "text"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "take_screenshot",
+            "description": "Capture a screenshot of the current active browser page and save it to disk.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "description": "Optional filename (e.g. 'google_results.png')."},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "browser_status",
+            "description": "Get current browser state including active URL, page title, and open tab count.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "close_tab",
+            "description": "Close the active browser tab or page.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "close_browser",
+            "description": "Close the browser session cleanly.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+    },
+]
+
+SYSTEM_DESKTOP_TOOL_SCHEMAS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "launch_app",
+            "description": "Launch a desktop application or program on Windows (e.g. Notepad, Calculator, VS Code, Chrome, Spotify).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "app_name": {"type": "string", "description": "Name or path of the app to launch (e.g. 'notepad', 'calc', 'vscode', 'chrome', 'spotify')."},
+                    "args": {"type": "string", "description": "Optional command line arguments or file path to open with the app."},
+                },
+                "required": ["app_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "close_app",
+            "description": "Close a running application or process on Windows by name (e.g. notepad, chrome, spotify).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "app_name": {"type": "string", "description": "Name of the app to close (e.g. 'notepad', 'chrome', 'spotify')."},
+                },
+                "required": ["app_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_system_stats",
+            "description": "Get current CPU %, RAM usage, Disk space, and Battery status.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+    },
+]
+
+RESEARCH_TOOL_SCHEMAS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "scrape_page",
+            "description": "Extract clean Markdown content from a web page or documentation site.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "URL of the page to scrape (e.g. 'https://fastapi.tiangolo.com')."},
+                },
+                "required": ["url"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "crawl_site",
+            "description": "Crawl a multi-page website or documentation portal into clean Markdown.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "Starting URL to crawl."},
+                    "limit": {"type": "integer", "description": "Maximum number of pages to crawl (default 5)."},
+                },
+                "required": ["url"],
+            },
+        },
+    },
+]
+

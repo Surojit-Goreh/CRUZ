@@ -1,20 +1,32 @@
 import asyncio
-from .voice_manager import VoiceManager
+import os
+import sys
+
+# Ensure backend root is on sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from voice.voice_manager import VoiceManager
 
 async def main():
-    vm = VoiceManager(stt_model="base.en", tts_voice="af_heart")
+    vm = VoiceManager()
 
-    input("Press ENTER to start recording (5 seconds)...")
-    result = await vm.run_turn(duration_seconds=5, save_debug_audio=True)
+    print("=" * 50)
+    print(" CRUZ Dynamic Voice Activity & Silence Detection Test")
+    print("=" * 50)
+    print("Cruz will now continuously record until you pause/stop talking.")
+    print("Speak a short or long sentence and then stay quiet.")
+    input("\nPress ENTER when you are ready to speak...")
+    
+    result = await vm.run_turn(duration_seconds=None, save_debug_audio=True)
 
-    print("\n" + "=" * 40)
+    print("\n" + "=" * 50)
     if result["success"]:
-        print(f"🎤 You:\n{result['transcript']}\n")
-        print(f"🤖 CRUZ:\n{result['reply']}")
+        print(f"🎤 You said:\n\"{result['transcript']}\"\n")
+        print(f"🤖 CRUZ replied:\n\"{result['reply']}\"")
     else:
-        print(f"❌ Error: {result['error']}")
-    print(f"\n⏱  {result['latency_ms']}ms")
-    print("=" * 40)
+        print(f"❌ Result: {result['error']}")
+    print(f"\n⏱ Turn Latency: {result['latency_ms']}ms")
+    print("=" * 50)
 
 if __name__ == "__main__":
     asyncio.run(main())

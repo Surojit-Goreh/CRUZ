@@ -1,6 +1,10 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
 import asyncio
 
+from utils.logger import get_logger
+
+logger = get_logger("api.websocket")
+
 router = APIRouter()
 
 @router.websocket("/ws/voice")
@@ -25,11 +29,14 @@ async def voice_websocket(websocket: WebSocket):
     try:
         while True:
             msg = await websocket.receive_json()
-            print("📩 RECEIVED:", msg)
+            logger.info(f"received: {msg}")
             if msg.get("action") == "start_turn":
-                result = await voice_manager.run_turn(duration_seconds=5, save_debug_audio=False)
+                duration_seconds = msg.get("duration_seconds", None)
+                result = await voice_manager.run_turn(
+                    duration_seconds=duration_seconds, save_debug_audio=False
+                )
                 await websocket.send_json({"state": "result", **result})
-                print("📤 SENDING RESULT")
+                logger.info("sent result")
     except WebSocketDisconnect:
         pass
     finally:

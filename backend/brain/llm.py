@@ -1,11 +1,13 @@
 import asyncio
+import json
+import uuid
 from typing import Optional
 
 from brain.prompt_builder import build_prompt
 from memory.extractor import extract_facts
 from memory.long_term_memory import long_term_memory
 from memory.memory_manager import memory_manager, DEFAULT_SESSION_ID
-from services.ollama import chat, stream_chat, chat_with_tools
+from services.model_router import model_router
 from executor.executor import run_tool_calls
 from tools.registry import ALL_TOOL_SCHEMAS
 from utils.logger import get_logger
@@ -59,7 +61,7 @@ async def run_tool_pipeline(messages: list) -> Optional[str]:
       - None if tool calls were executed, indicating `messages` now contains tool results.
     """
     for round_num in range(MAX_TOOL_ITERATIONS):
-        message = await chat_with_tools(messages, tools=ALL_TOOL_SCHEMAS)
+        message = await model_router.chat_with_tools(messages, tools=ALL_TOOL_SCHEMAS)
         tool_calls = message.get("tool_calls")
 
         if not tool_calls:
@@ -71,8 +73,36 @@ async def run_tool_pipeline(messages: list) -> Optional[str]:
         tool_names = [c.get("function", {}).get("name") for c in tool_calls]
         logger.info(f"round {round_num}: model called tool(s) {tool_names}")
 
-        messages.append(message)
-        messages.extend(run_tool_calls(tool_calls))
+        # Some providers (older Ollama versions especially) don't include
+        # an `id` on each tool call at all. Synthesize one here, in the
+        # single place every downstream consumer (history + executor)
+        # reads from, so id and tool_call_id always agree no matter which
+        # provider answered this round.
+        for tc in tool_calls:
+            if not tc.get("id"):
+                tc["id"] = f"call_{uuid.uuid4().hex[:24]}"
+            tc.setdefault("type", "function")
+
+        # model_router hands back tool_calls with `arguments` as a parsed
+        # dict for convenience — but OpenAI-compatible providers require
+        # `arguments` to be re-serialized as a JSON *string* when this
+        # message is sent back as conversation history. Skipping this is
+        # what caused "tool_calls[].function.arguments must be a JSON
+        # object string" 400s from OpenRouter.
+        history_message = dict(message)
+        history_message["tool_calls"] = [
+            {
+                **tc,
+                "function": {
+                    **tc["function"],
+                    "arguments": json.dumps(tc["function"].get("arguments", {})),
+                },
+            }
+            for tc in tool_calls
+        ]
+
+        messages.append(history_message)
+        messages.extend(await run_tool_calls(tool_calls))
 
     logger.warning(f"hit MAX_TOOL_ITERATIONS ({MAX_TOOL_ITERATIONS})")
     return None
@@ -91,7 +121,7 @@ async def generate_response(user_message: str, session_id: str = DEFAULT_SESSION
     if initial_reply is not None:
         reply = initial_reply
     else:
-        reply = await chat(messages)
+        reply = await model_router.chat(messages)
 
     memory_manager.add_message(session_id, "user", user_message)
     memory_manager.add_message(session_id, "assistant", reply)
@@ -118,7 +148,7 @@ async def generate_stream(user_message: str, session_id: str = DEFAULT_SESSION_I
         full_reply = initial_reply
         yield initial_reply
     else:
-        async for chunk in stream_chat(messages):
+        async for chunk in model_router.stream_chat(messages):
             full_reply += chunk
             yield chunk
 

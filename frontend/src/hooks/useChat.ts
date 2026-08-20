@@ -26,7 +26,6 @@ interface TurnResult {
 
 function getWebSocketUrl(): string {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  // Backend runs on 8000 regardless of what port the frontend is served on
   return `${protocol}://${window.location.hostname}:8000/ws/voice`;
 }
 
@@ -48,7 +47,7 @@ export default function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState<boolean>(false);
 
-  // --- voice state (merged in from the old ChatContext) ---
+  // --- Voice State ---
   const [connected, setConnected] = useState(false);
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
 
@@ -57,20 +56,22 @@ export default function useChat() {
   const mountedRef = useRef(true);
 
   const addUserMessage = useCallback((text: string) => {
+    if (!text || !text.trim()) return;
     setMessages((prev) => [
       ...prev,
-      { id: makeId(), sender: "user", text, timestamp: nowTime() },
+      { id: makeId(), sender: "user", text: text.trim(), timestamp: nowTime() },
     ]);
   }, []);
 
   const addAssistantMessage = useCallback((text: string) => {
+    if (!text || !text.trim()) return;
     setMessages((prev) => [
       ...prev,
-      { id: makeId(), sender: "assistant", text, timestamp: nowTime() },
+      { id: makeId(), sender: "assistant", text: text.trim(), timestamp: nowTime() },
     ]);
   }, []);
 
-  // --- typed chat (unchanged streaming behaviour) ---
+  // --- Typed Chat Streaming ---
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim()) return;
@@ -79,10 +80,7 @@ export default function useChat() {
       setIsTyping(true);
 
       const aiId = makeId();
-      setMessages((prev) => [
-        ...prev,
-        { id: aiId, sender: "assistant", text: "", timestamp: nowTime() },
-      ]);
+      let streamStarted = false;
 
       try {
         const response = await fetch("http://127.0.0.1:8000/chat/stream", {
@@ -95,8 +93,6 @@ export default function useChat() {
           throw new Error("Network response was not ok or readable stream missing");
         }
 
-        setIsTyping(false);
-
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
         let done = false;
@@ -107,43 +103,37 @@ export default function useChat() {
 
           if (value) {
             const chunkText = decoder.decode(value, { stream: true });
-            setMessages((prev) =>
-              prev.map((m) => (m.id === aiId ? { ...m, text: m.text + chunkText } : m))
-            );
+            if (!streamStarted) {
+              streamStarted = true;
+              setIsTyping(false);
+              setMessages((prev) => [
+                ...prev,
+                { id: aiId, sender: "assistant", text: chunkText, timestamp: nowTime() },
+              ]);
+            } else {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === aiId ? { ...m, text: m.text + chunkText } : m))
+              );
+            }
           }
         }
 
-        const finalChunk = decoder.decode();
-        if (finalChunk) {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === aiId ? { ...m, text: m.text + finalChunk } : m))
-          );
-        }
+        setIsTyping(false);
       } catch (error) {
         console.error("Failed to stream AI response:", error);
         setIsTyping(false);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === aiId ? { ...m, text: "Backend connection failed." } : m
-          )
-        );
+        setMessages((prev) => [
+          ...prev,
+          { id: aiId, sender: "assistant", text: "Backend connection failed.", timestamp: nowTime() },
+        ]);
       }
     },
     [addUserMessage]
   );
 
-  // --- voice websocket (merged in from the old ChatContext) ---
+  // --- Voice WebSocket ---
   const connect = useCallback(() => {
     const ws = new WebSocket(getWebSocketUrl());
-
-    // Guard against a stale/superseded socket still delivering events.
-    // In dev, React's StrictMode mounts this effect twice (mount ->
-    // cleanup -> mount), and if the first socket hasn't fully closed
-    // before the second one opens, both can briefly be subscribed to
-    // the backend's broadcast and both fire onmessage for the same
-    // turn — showing every voice reply twice. Checking `wsRef.current
-    // === ws` means only the socket that is CURRENTLY the active one
-    // is allowed to act; anything else is a leftover and is ignored.
     const isCurrent = () => wsRef.current === ws;
 
     ws.onopen = () => {
@@ -157,6 +147,7 @@ export default function useChat() {
     ws.onclose = () => {
       if (!isCurrent()) return;
       setConnected(false);
+      setIsTyping(false);
       if (mountedRef.current) {
         reconnectTimerRef.current = setTimeout(connect, RECONNECT_DELAY_MS);
       }
@@ -175,6 +166,7 @@ export default function useChat() {
       if (data.state === "result") {
         const result = data as TurnResult;
         setVoiceState("idle");
+        setIsTyping(false);
 
         if (!result.success) {
           addAssistantMessage(
@@ -187,11 +179,18 @@ export default function useChat() {
       const event = data as VoiceEvent;
       setVoiceState(event.state);
 
-      if (event.state === "thinking" && event.transcript) {
-        addUserMessage(event.transcript);
-      }
-      if (event.state === "speaking" && event.reply) {
-        addAssistantMessage(event.reply);
+      if (event.state === "thinking" || event.state === "transcribing") {
+        if (event.transcript) {
+          addUserMessage(event.transcript);
+        }
+        setIsTyping(true);
+      } else if (event.state === "speaking") {
+        setIsTyping(false);
+        if (event.reply) {
+          addAssistantMessage(event.reply);
+        }
+      } else if (event.state === "idle") {
+        setIsTyping(false);
       }
     };
 
@@ -206,8 +205,6 @@ export default function useChat() {
       mountedRef.current = false;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
 
-      // Null the ref BEFORE closing, so this socket's own onclose sees
-      // itself as no-longer-current and skips scheduling a reconnect.
       const ws = wsRef.current;
       wsRef.current = null;
       ws?.close();

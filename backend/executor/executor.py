@@ -5,6 +5,7 @@ This layer never thinks — it only executes what the planner/LLM already
 decided, and guarantees a clean, JSON-serializable result comes back no
 matter what goes wrong inside the tool.
 """
+import inspect
 import json
 
 from tools.registry import get_tool
@@ -14,14 +15,17 @@ from utils.logger import get_logger
 logger = get_logger("executor")
 
 
-def execute_tool_call(name: str, arguments: dict) -> dict:
+async def execute_tool_call(name: str, arguments: dict) -> dict:
     tool = get_tool(name)
 
     if tool is None:
         return {"success": False, "error": f"Unknown tool '{name}'."}
 
     try:
-        return tool(**arguments)
+        result = tool(**arguments)
+        if inspect.isawaitable(result):
+            result = await result
+        return result
     except UnsafePathError as e:
         # Expected/handled — the tool refused to do something unsafe.
         logger.warning(f"blocked unsafe call to {name}({arguments}): {e}")
@@ -36,14 +40,18 @@ def execute_tool_call(name: str, arguments: dict) -> dict:
         return {"success": False, "error": f"'{name}' failed: {e}"}
 
 
-def run_tool_calls(tool_calls: list) -> list:
+async def run_tool_calls(tool_calls: list) -> list:
     """
-    tool_calls: the list Ollama returns on message["tool_calls"], each
-    shaped like {"function": {"name": ..., "arguments": {...}}}.
+    tool_calls: the list model_router returns on message["tool_calls"], each
+    shaped like {"id": ..., "type": "function", "function": {"name": ..., "arguments": {...}}}.
+    `id` is guaranteed present by brain/llm.py before this is called, even
+    for providers (like older Ollama) that don't supply one natively.
 
-    Returns a list of {"role": "tool", ...} messages ready to append to
-    the conversation and send back to the model for its final
-    natural-language reply.
+    Returns a list of {"role": "tool", "tool_call_id": ..., ...} messages
+    ready to append to the conversation and send back to the model for its
+    final natural-language reply. `tool_call_id` must match the `id` on the
+    corresponding assistant tool_calls entry — OpenAI-compatible APIs (and
+    Ollama's /api/chat) reject the request without it.
     """
     results = []
 
@@ -60,10 +68,11 @@ def run_tool_calls(tool_calls: list) -> list:
             except json.JSONDecodeError:
                 arguments = {}
 
-        result = execute_tool_call(name, arguments)
+        result = await execute_tool_call(name, arguments)
 
         results.append({
             "role": "tool",
+            "tool_call_id": call.get("id"),
             "name": name,
             "content": json.dumps(result),
         })
