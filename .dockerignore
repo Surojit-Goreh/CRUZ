@@ -1,0 +1,29 @@
+# Version control
+.git
+.gitignore
+
+# Python virtual environment & cache
+backend/.venv/
+**/.venv/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Node / Frontend build artifacts & dependencies
+frontend/node_modules/
+**/node_modules/
+frontend/dist/
+**/dist/
+
+# Local data, logs, and audio recordings
+backend/logs/
+backend/data/*
+!backend/data/.gitkeep
+backend/test_recording.wav
+backend/voice/test_recording.wav
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

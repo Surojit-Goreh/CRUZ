@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      HOST: 0.0.0.0
+      BROWSER_HEADLESS: "true"
+    volumes:
+      - cruz-data:/app/backend/data
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "127.0.0.1:5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  cruz-data:

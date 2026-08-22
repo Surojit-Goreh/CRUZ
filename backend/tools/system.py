@@ -31,3 +31,40 @@ async def get_system_stats() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Failed to get system stats: {e}")
         return {"success": False, "error": str(e)}
+
+
+VALID_AGENT_MODES = {
+    "auto": "Auto Dispatcher",
+    "build": "Build Agent (Coding)",
+    "coding": "Build Agent (Coding)",
+    "plan": "Plan Agent (Deep Reasoning)",
+    "reasoning": "Plan Agent (Deep Reasoning)",
+    "image": "Image / Vision Agent",
+    "vision": "Image / Vision Agent",
+    "writing": "Writer Agent",
+    "writer": "Writer Agent",
+    "chat": "Fast Chat",
+    "general": "Fast Chat",
+}
+
+
+def set_agent_mode(mode: str) -> str:
+    """
+    Switches CRUZ's active agent mode dynamically (e.g. 'plan', 'build', 'image', 'writing', 'chat', 'auto').
+    """
+    normalized = mode.strip().lower()
+    canonical = {
+        "reasoning": "plan",
+        "coding": "build",
+        "vision": "image",
+        "writer": "writing",
+        "general": "chat",
+        "speed": "chat",
+    }.get(normalized, normalized)
+
+    if canonical not in ["auto", "build", "plan", "image", "writing", "chat"]:
+        return f"Unknown mode '{mode}'. Available modes are: auto, build (coding), plan (reasoning), image (vision), writing, chat."
+
+    display_name = VALID_AGENT_MODES.get(canonical, canonical.title())
+    logger.info(f"Agent mode switched to '{canonical}' ({display_name})")
+    return f"AGENT_MODE_SWITCH:{canonical}: Switched active mode to {display_name}. I will now handle your requests with specialized models."

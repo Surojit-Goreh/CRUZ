@@ -195,10 +195,169 @@
   color: var(--accent-primary);
 }
 
+/* ── Sidebar Voice Assistant Card ── */
+.sidebar-voice-card {
+  margin-top: auto;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.sidebar-voice-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(124, 92, 252, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  backdrop-filter: blur(12px);
+}
+
+.sidebar-voice-btn:hover:not(:disabled) {
+  background: rgba(124, 92, 252, 0.12);
+  border-color: rgba(124, 92, 252, 0.45);
+  box-shadow: 0 0 16px rgba(124, 92, 252, 0.2);
+  transform: translateY(-1px);
+}
+
+.sidebar-voice-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.voice-btn-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-voice-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #64748b;
+  transition: all 0.2s ease;
+}
+
+.sidebar-voice-dot.wake-active,
+.sidebar-voice-dot.idle.wake-active {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+  animation: voicePulseDot 2s infinite ease-in-out;
+}
+
+.sidebar-voice-dot.listening {
+  background: #a855f7;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+  animation: voiceListeningPulse 0.8s infinite alternate;
+}
+
+.sidebar-voice-dot.thinking {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+}
+
+@keyframes voicePulseDot {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+
+@keyframes voiceListeningPulse {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.4); opacity: 1; }
+}
+
+/* Animated Sound Wave Bars when speaking */
+.sidebar-voice-waves {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+
+.sidebar-voice-waves .wave-bar {
+  width: 3px;
+  background: #38bdf8;
+  border-radius: 2px;
+  animation: sidebarWave 0.6s ease-in-out infinite alternate;
+}
+
+.sidebar-voice-waves .bar-1 { height: 6px; animation-delay: 0.1s; }
+.sidebar-voice-waves .bar-2 { height: 12px; animation-delay: 0.25s; }
+.sidebar-voice-waves .bar-3 { height: 8px; animation-delay: 0.4s; }
+
+@keyframes sidebarWave {
+  0% { height: 3px; }
+  100% { height: 14px; }
+}
+
+.sidebar-voice-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.voice-status-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.voice-status-sub {
+  font-size: 10.5px;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-voice-mic-icon {
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.sidebar-voice-btn:hover .sidebar-voice-mic-icon {
+  color: #a855f7;
+}
+
+/* Collapsed sidebar voice trigger */
+.sidebar.collapsed .sidebar-voice-info,
+.sidebar.collapsed .sidebar-voice-mic-icon {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-voice-card {
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-voice-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+
 /* ── User Profile ── */
 .sidebar-user {
-  margin-top: auto;
-
   display: flex;
   align-items: center;
   gap: 12px;

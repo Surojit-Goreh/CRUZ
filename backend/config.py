@@ -59,9 +59,14 @@ OPENROUTER_API_KEY = get_env("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = get_env("OPENROUTER_MODEL", "openrouter/auto")
 
 # OpenCode Zen — hosted gateway, OpenAI-compatible
-ZEN_BASE_URL = get_env("ZEN_BASE_URL", "https://opencode.ai/zen/v1")
-ZEN_API_KEY = get_env("ZEN_API_KEY", "")
-ZEN_MODEL = get_env("ZEN_MODEL", "deepseek-v4-flash-free")
+OPENCODE_BASE_URL = get_env("OPENCODE_BASE_URL", get_env("ZEN_BASE_URL", "https://opencode.ai/zen/v1"))
+OPENCODE_API_KEY = get_env("OPENCODE_API_KEY", get_env("ZEN_API_KEY", ""))
+OPENCODE_MODEL = get_env("OPENCODE_MODEL", get_env("ZEN_MODEL", "deepseek-v4-flash-free"))
+
+# Backwards compatibility aliases
+ZEN_BASE_URL = OPENCODE_BASE_URL
+ZEN_API_KEY = OPENCODE_API_KEY
+ZEN_MODEL = OPENCODE_MODEL
 
 # Firecrawl Web Research settings
 FIRECRAWL_API_KEY = get_env("FIRECRAWL_API_KEY", "")
@@ -78,6 +83,6 @@ WHISPER_MODEL = get_env("WHISPER_MODEL", "small.en")    # Offline STT model: tin
 VOICE_MODE = get_env("VOICE_MODE", "auto")  # 'auto' (online with offline fallback), 'local' (offline only), 'cloud' (cloud only)
 
 # Dynamic Voice Activity Detection (VAD) timing settings
-VOICE_SILENCE_DURATION = float(get_env("VOICE_SILENCE_DURATION", "1.2"))  # Snappy ~1.2s pause after speaking before responding
-VOICE_INITIAL_TIMEOUT = float(get_env("VOICE_INITIAL_TIMEOUT", "10.0"))   # Wait time for user to begin speaking (first word)
-VOICE_MAX_DURATION = float(get_env("VOICE_MAX_DURATION", "60.0"))         # Maximum continuous voice recording duration
+VOICE_SILENCE_DURATION = float(get_env("VOICE_SILENCE_DURATION", "1.8"))  # Natural ~1.8s pause after speaking before responding
+VOICE_INITIAL_TIMEOUT = float(get_env("VOICE_INITIAL_TIMEOUT", "90.0"))   # Wait up to 1.5 minutes (90s) for user to speak
+VOICE_MAX_DURATION = float(get_env("VOICE_MAX_DURATION", "180.0"))        # Maximum continuous voice recording duration (3 min)

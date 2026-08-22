@@ -17,6 +17,18 @@ backend/.env
 backend/logs/
 *.log
 
+# Local runtime data: may contain browser sessions, credentials, recordings,
+# screenshots, prompts, and user memory. Keep only data/.gitkeep in Git.
+backend/data/*
+!backend/data/.gitkeep
+backend/static/generated_images/*
+!backend/static/generated_images/.gitkeep
+*.db
+*.db-journal
+*.wav
+backend/test_recording.wav
+backend/voice/test_recording.wav
+
 # ===========================
 # Node.js
 # ===========================

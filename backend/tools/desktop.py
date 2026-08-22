@@ -72,23 +72,18 @@ async def launch_app(app_name: str, args: Optional[str] = None) -> Dict[str, Any
     Launches a desktop application by name or path (e.g. Notepad, Calculator, VS Code, Chrome, Spotify, Paint, VLC, Gemini).
     """
     clean_name = app_name.lower().strip()
+    if clean_name not in APP_MAPPINGS:
+        return {"success": False, "app": app_name, "error": "Unsupported app. Launching arbitrary commands or paths is not allowed."}
+    if args:
+        return {"success": False, "app": app_name, "error": "Arguments are not supported for desktop launches."}
 
-    if clean_name == "gemini":
-        target_cmd = "https://gemini.google.com"
-    else:
-        target_list = APP_MAPPINGS.get(clean_name, [app_name])
-        target_cmd = target_list[0]
+    target_cmd = APP_MAPPINGS[clean_name][0]
 
     try:
         if sys.platform == "win32":
-            if args:
-                cmd = f'start "" "{target_cmd}" {args}'
-            else:
-                cmd = f'start "" "{target_cmd}"'
-            subprocess.Popen(cmd, shell=True)
+            subprocess.Popen([target_cmd])
         else:
-            full_command = f"{target_cmd} {args}" if args else target_cmd
-            subprocess.Popen(full_command.split())
+            subprocess.Popen([target_cmd])
         logger.info(f"Successfully launched desktop app/link: {clean_name}")
         return {"success": True, "app": app_name, "message": f"Successfully launched {app_name}"}
     except Exception as e:
@@ -102,7 +97,9 @@ async def close_app(app_name: str) -> Dict[str, Any]:
     Uses win32gui window title matching (WM_CLOSE), browser tab matching, psutil process tree, and taskkill.
     """
     clean_name = app_name.lower().strip()
-    target_exes = APP_MAPPINGS.get(clean_name, [clean_name, f"{clean_name}.exe"])
+    if clean_name not in APP_MAPPINGS:
+        return {"success": False, "app": app_name, "error": "Unsupported app. Closing arbitrary processes is not allowed."}
+    target_exes = APP_MAPPINGS[clean_name]
 
     closed_count = 0
 
@@ -138,27 +135,11 @@ async def close_app(app_name: str) -> Dict[str, Any]:
                         matches = True
                         break
 
-                if not matches and len(clean_name) >= 3 and clean_name in pname:
-                    matches = True
-
                 if matches:
-                    proc.kill()
+                    proc.terminate()
                     closed_count += 1
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
-
-        # 4. Fallback taskkill on Windows for exact exes (skipping broad browsers unless explicitly asked)
-        if sys.platform == "win32" and clean_name not in ["chrome", "google chrome", "edge"]:
-            for exe in target_exes:
-                exe_name = exe if exe.endswith(".exe") else f"{exe}.exe"
-                res = subprocess.run(
-                    f"taskkill /IM {exe_name} /F /T",
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                )
-                if res.returncode == 0:
-                    closed_count += 1
 
         if closed_count > 0:
             logger.info(f"Successfully closed '{app_name}' (closed {closed_count} instances/windows/tabs)")

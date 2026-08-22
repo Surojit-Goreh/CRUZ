@@ -9,9 +9,11 @@ if sys.platform == "win32":
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from config import APP_NAME
 from api.routes import router
+from api.providers import router as providers_router
 from api.websocket import router as voice_ws_router
 
 from voice.event_dispatcher import EventDispatcher
@@ -28,21 +30,32 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Provider", "X-Model"],
 )
 
 # -----------------------------
-# Existing REST API
+# Static files (Generated images, media)
+# -----------------------------
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+os.makedirs(os.path.join(STATIC_DIR, "generated_images"), exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# -----------------------------
+# REST APIs
 # -----------------------------
 app.include_router(router)
+app.include_router(providers_router)
+
 
 # -----------------------------
 # Voice system (Singletons)
 # -----------------------------
 dispatcher = EventDispatcher()
-voice_manager = VoiceManager(on_event=dispatcher.publish)
-
 app.state.dispatcher = dispatcher
-app.state.voice_manager = voice_manager
+# Voice models are large and unavailable in many API-only deployments. Create
+# them only when a client actually opens the voice WebSocket.
+app.state.voice_manager = None
+app.state.voice_manager_lock = asyncio.Lock()
 
 # -----------------------------
 # Voice WebSocket
@@ -58,4 +71,4 @@ if __name__ == "__main__":
         port=8000,
         reload=True,
         reload_excludes=["data/*", "*.wav", "*.pyc", "*.bin"],
-    )
+    )

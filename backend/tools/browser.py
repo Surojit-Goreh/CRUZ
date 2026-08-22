@@ -2,16 +2,23 @@
 Browser automation tools interfacing with BrowserManager.
 All functions are async and return JSON-serializable dicts.
 """
-from typing import Optional
+from typing import Optional, Union, Dict, Any
 from services.browser_manager import browser_manager
+from tools.web_search import search_web_instant
 
 
 async def open_url(url: str) -> dict:
     return await browser_manager.open_url(url)
 
 
-async def search_web(query: str, engine: Optional[str] = None) -> dict:
-    return await browser_manager.search_web(query, engine)
+async def search_web(query: str, engine: Optional[str] = None) -> Union[Dict[str, Any], str]:
+    if engine and "youtube" in engine.lower():
+        return await browser_manager.search_web(query, engine)
+    try:
+        results = search_web_instant(query)
+        return {"results": results, "query": query, "fast_search": True}
+    except Exception:
+        return await browser_manager.search_web(query, engine)
 
 
 async def read_page(max_chars: int = 8000) -> dict:

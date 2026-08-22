@@ -43,6 +43,29 @@ def _clean_text_for_speech(text: str) -> str:
     return clean or text
 
 
+def audio_to_wav_bytes(audio_array: np.ndarray, sample_rate: int = 24000) -> bytes:
+    """Converts a float32 or int16 numpy audio array to 16-bit PCM WAV bytes."""
+    if audio_array is None or len(audio_array) == 0:
+        return b""
+    if audio_array.dtype in (np.float32, np.float64):
+        int_audio = np.clip(audio_array * 32767.0, -32768, 32767).astype(np.int16)
+    else:
+        int_audio = audio_array.astype(np.int16)
+
+    buf = io.BytesIO()
+    wavfile.write(buf, sample_rate, int_audio)
+    return buf.getvalue()
+
+
+def audio_to_base64_wav(audio_array: np.ndarray, sample_rate: int = 24000) -> str:
+    """Converts a float32 or int16 numpy audio array to a base64-encoded WAV string."""
+    wav_bytes = audio_to_wav_bytes(audio_array, sample_rate)
+    if not wav_bytes:
+        return ""
+    return base64.b64encode(wav_bytes).decode("utf-8")
+
+
+
 class TextToSpeech:
     """
     Text-to-Speech synthesizer with dual engine support:
@@ -225,3 +248,22 @@ class TextToSpeech:
 
         # Fast Local Kokoro execution
         return self._synthesize_local(speech_text)
+
+    def synthesize_kokoro(self, text: str) -> tuple[np.ndarray, int]:
+        """
+        Directly synthesizes speech using local Kokoro TTS pipeline (neural, 24kHz).
+        Used for immediate sentence-by-sentence streaming TTS.
+        """
+        if not text or not text.strip():
+            return np.array([], dtype=np.float32), 24000
+        speech_text = _clean_text_for_speech(text)
+        return self._synthesize_local(speech_text)
+
+    def synthesize_sentence(self, text: str, force_kokoro: bool = True) -> tuple[np.ndarray, int]:
+        """
+        Synthesizes a single sentence chunk for low-latency streaming TTS.
+        Defaults to local Kokoro TTS for instantaneous sub-100ms response.
+        """
+        if force_kokoro or self.voice_mode == "local":
+            return self.synthesize_kokoro(text)
+        return self.synthesize(text)

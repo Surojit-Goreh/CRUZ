@@ -3,12 +3,14 @@ Maps tool names (as the LLM refers to them) to the actual Python
 functions that implement them, and exposes the combined schema list to
 advertise to the model.
 """
-from tools import files, browser, firecrawl, desktop, system
+from tools import files, browser, firecrawl, desktop, system, image
 from tools.schemas import (
     FILE_TOOL_SCHEMAS,
     BROWSER_TOOL_SCHEMAS,
     SYSTEM_DESKTOP_TOOL_SCHEMAS,
     RESEARCH_TOOL_SCHEMAS,
+    IMAGE_TOOL_SCHEMAS,
+    AGENT_CONTROL_SCHEMAS,
 )
 
 TOOL_REGISTRY = {
@@ -38,8 +40,11 @@ TOOL_REGISTRY = {
 
     # System & Desktop Automation tools
     "launch_app": desktop.launch_app,
-    "close_app": desktop.close_app,
     "get_system_stats": system.get_system_stats,
+    "set_agent_mode": system.set_agent_mode,
+
+    # Image Generation tool
+    "generate_image": image.generate_image,
 
     # Research / Firecrawl tools
     "scrape_page": firecrawl.scrape_page,
@@ -48,6 +53,8 @@ TOOL_REGISTRY = {
 
 ALL_TOOL_SCHEMAS = [
     *FILE_TOOL_SCHEMAS,
+    *IMAGE_TOOL_SCHEMAS,
+    *AGENT_CONTROL_SCHEMAS,
     *BROWSER_TOOL_SCHEMAS,
     *SYSTEM_DESKTOP_TOOL_SCHEMAS,
     *RESEARCH_TOOL_SCHEMAS,

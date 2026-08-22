@@ -293,26 +293,11 @@ SYSTEM_DESKTOP_TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "launch_app",
-            "description": "Launch a desktop application or program on Windows (e.g. Notepad, Calculator, VS Code, Chrome, Spotify).",
+              "description": "Launch an allowlisted desktop application on Windows (e.g. Notepad, Calculator, VS Code, Chrome, Spotify). Arbitrary commands and arguments are blocked.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "app_name": {"type": "string", "description": "Name or path of the app to launch (e.g. 'notepad', 'calc', 'vscode', 'chrome', 'spotify')."},
-                    "args": {"type": "string", "description": "Optional command line arguments or file path to open with the app."},
-                },
-                "required": ["app_name"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "close_app",
-            "description": "Close a running application or process on Windows by name (e.g. notepad, chrome, spotify).",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "app_name": {"type": "string", "description": "Name of the app to close (e.g. 'notepad', 'chrome', 'spotify')."},
+                      "app_name": {"type": "string", "description": "Allowlisted app name (e.g. 'notepad', 'calc', 'vscode', 'chrome', 'spotify')."},
                 },
                 "required": ["app_name"],
             },
@@ -363,3 +348,42 @@ RESEARCH_TOOL_SCHEMAS = [
     },
 ]
 
+IMAGE_TOOL_SCHEMAS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_image",
+            "description": "Generate high-quality HD images from a descriptive prompt and render them directly in the chatbox. NEVER open external browser windows for images.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string", "description": "Detailed visual description of the image to generate."},
+                    "aspect_ratio": {"type": "string", "enum": ["1:1", "16:9", "9:16", "4:3", "3:4"], "description": "Image aspect ratio. Defaults to '1:1'."},
+                    "enhance": {"type": "boolean", "description": "Whether to enhance the prompt for photorealism and fine detail. Defaults to true."},
+                },
+                "required": ["prompt"],
+            },
+        },
+    },
+]
+
+AGENT_CONTROL_SCHEMAS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "set_agent_mode",
+            "description": "Switch CRUZ's active agent mode dynamically (e.g. when user says 'change your mode to reasoning', 'switch to image agent', 'switch to coding/build', 'switch to writer', 'switch to fast chat', or 'switch to auto').",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "enum": ["auto", "build", "plan", "image", "writing", "chat"],
+                        "description": "Target agent mode: 'auto' (Auto Dispatcher), 'build' (Coding), 'plan' (Reasoning), 'image' (Vision/Image), 'writing' (Writer), 'chat' (Fast Speed).",
+                    },
+                },
+                "required": ["mode"],
+            },
+        },
+    },
+]

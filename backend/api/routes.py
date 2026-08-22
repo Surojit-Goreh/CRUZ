@@ -1,4 +1,5 @@
 from typing import Optional
+import re
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -20,6 +21,8 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
+    agent_mode: Optional[str] = "auto"
+    model: Optional[str] = None
 
 
 class FactUpsert(BaseModel):
@@ -42,14 +45,29 @@ def health():
     }
 
 
+from services.model_router import model_router
+from services.providers.classifier import detect_agent_mode_intent
+
 @router.post("/chat")
 async def chat(request: ChatRequest):
     try:
         session_id = request.session_id or DEFAULT_SESSION_ID
-        reply = await generate_response(request.message, session_id)
+        intent_mode = detect_agent_mode_intent(request.message)
+        effective_mode = intent_mode or request.agent_mode
+
+        raw_reply = await generate_response(
+            request.message,
+            session_id,
+            agent_mode=effective_mode,
+            selected_model=request.model,
+        )
+        clean_reply = re.sub(r"AGENT_MODE_SWITCH:\w+:\s*", "", raw_reply).strip()
 
         return {
-            "reply": reply
+            "reply": clean_reply,
+            "provider": model_router.last_provider_info.get("provider_name"),
+            "model": model_router.last_provider_info.get("model"),
+            "agent_mode": intent_mode,
         }
 
     except Exception as e:
@@ -60,22 +78,44 @@ async def chat(request: ChatRequest):
         )
 
 
+import json
+
 @router.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
     session_id = request.session_id or DEFAULT_SESSION_ID
+    intent_mode = detect_agent_mode_intent(request.message)
+    effective_mode = intent_mode or request.agent_mode
 
     async def event_generator():
+        sent_metadata = False
         try:
-            async for chunk in generate_stream(request.message, session_id):
-                yield chunk
-        except Exception:
+            async for chunk in generate_stream(
+                request.message,
+                session_id,
+                agent_mode=effective_mode,
+                selected_model=request.model,
+            ):
+                clean_chunk = re.sub(r"AGENT_MODE_SWITCH:\w+:\s*", "", chunk)
+                if clean_chunk:
+                    if not sent_metadata:
+                        provider_info = model_router.last_provider_info
+                        yield f"event: metadata\ndata: {json.dumps(provider_info)}\n\n"
+                        sent_metadata = True
+                    yield f"event: token\ndata: {json.dumps(clean_chunk)}\n\n"
+        except Exception as exc:
             logger.exception("chat stream failed")
-            yield "\n\n[CRUZ hit an error generating a response. Check server logs for details.]"
+            yield f"event: error\ndata: {json.dumps(str(exc))}\n\n"
+
+    headers = {}
+    if intent_mode:
+        headers["X-Agent-Mode"] = intent_mode
 
     return StreamingResponse(
         event_generator(),
-        media_type="text/plain",
+        media_type="text/event-stream",
+        headers=headers,
     )
+
 
 
 @router.post("/chat/reset")

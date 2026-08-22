@@ -19,10 +19,8 @@ logger = get_logger("brain.llm")
 # once done.
 _background_tasks: set = set()
 
-# Guards against a model getting stuck calling tools back-to-back
-# without ever giving a plain-text answer. After this many rounds we
-# force a final answer instead of running another tool.
-MAX_TOOL_ITERATIONS = 4
+# Guards against infinite tool loops. Set high enough for multi-file project creation.
+MAX_TOOL_ITERATIONS = 12
 
 
 def _remember_in_background(user_message: str) -> None:
@@ -47,9 +45,26 @@ async def _remember(user_message: str) -> None:
         # A failed extraction should never crash anything — it just
         # means nothing new got saved this turn.
         pass
+AGENT_MODE_TASK_MAP = {
+    "build": "coding",
+    "coding": "coding",
+    "plan": "reasoning",
+    "reasoning": "reasoning",
+    "image": "vision",
+    "vision": "vision",
+    "writing": "writing",
+    "writer": "writing",
+    "chat": "general",
+    "general": "general",
+    "auto": None,
+}
 
 
-async def run_tool_pipeline(messages: list) -> Optional[str]:
+async def run_tool_pipeline(
+    messages: list,
+    task_category: Optional[str] = None,
+    selected_model: Optional[str] = None,
+) -> Optional[str]:
     """
     Executes the tool-calling loop. If the model asks to call a tool, runs it
     locally through the executor and appends both the tool call and tool result
@@ -61,7 +76,12 @@ async def run_tool_pipeline(messages: list) -> Optional[str]:
       - None if tool calls were executed, indicating `messages` now contains tool results.
     """
     for round_num in range(MAX_TOOL_ITERATIONS):
-        message = await model_router.chat_with_tools(messages, tools=ALL_TOOL_SCHEMAS)
+        message = await model_router.chat_with_tools(
+            messages,
+            tools=ALL_TOOL_SCHEMAS,
+            task_category=task_category,
+            selected_model=selected_model,
+        )
         tool_calls = message.get("tool_calls")
 
         if not tool_calls:
@@ -83,12 +103,6 @@ async def run_tool_pipeline(messages: list) -> Optional[str]:
                 tc["id"] = f"call_{uuid.uuid4().hex[:24]}"
             tc.setdefault("type", "function")
 
-        # model_router hands back tool_calls with `arguments` as a parsed
-        # dict for convenience — but OpenAI-compatible providers require
-        # `arguments` to be re-serialized as a JSON *string* when this
-        # message is sent back as conversation history. Skipping this is
-        # what caused "tool_calls[].function.arguments must be a JSON
-        # object string" 400s from OpenRouter.
         history_message = dict(message)
         history_message["tool_calls"] = [
             {
@@ -108,20 +122,31 @@ async def run_tool_pipeline(messages: list) -> Optional[str]:
     return None
 
 
-async def generate_response(user_message: str, session_id: str = DEFAULT_SESSION_ID) -> str:
+async def generate_response(
+    user_message: str,
+    session_id: str = DEFAULT_SESSION_ID,
+    agent_mode: Optional[str] = "auto",
+    selected_model: Optional[str] = None,
+) -> str:
     """
     Normal (non-streaming) response, with short-term + long-term memory
     and file-operation tool calling.
     """
+    task_category = AGENT_MODE_TASK_MAP.get((agent_mode or "auto").lower())
     history = memory_manager.get_messages(session_id)
     facts = long_term_memory.get_all_facts()
     messages = build_prompt(user_message, history, facts)
 
-    initial_reply = await run_tool_pipeline(messages)
+    initial_reply = await run_tool_pipeline(messages, task_category=task_category, selected_model=selected_model)
     if initial_reply is not None:
         reply = initial_reply
     else:
-        reply = await model_router.chat(messages)
+        # Preserve the user's explicit model choice after tool execution too.
+        reply = await model_router.chat(
+            messages,
+            task_category=task_category,
+            selected_model=selected_model,
+        )
 
     memory_manager.add_message(session_id, "user", user_message)
     memory_manager.add_message(session_id, "assistant", reply)
@@ -131,16 +156,22 @@ async def generate_response(user_message: str, session_id: str = DEFAULT_SESSION
     return reply
 
 
-async def generate_stream(user_message: str, session_id: str = DEFAULT_SESSION_ID):
+async def generate_stream(
+    user_message: str,
+    session_id: str = DEFAULT_SESSION_ID,
+    agent_mode: Optional[str] = "auto",
+    selected_model: Optional[str] = None,
+):
     """
     Streaming response, with short-term + long-term memory and file-operation
     tool calling. Fast-paths non-tool responses to avoid duplicate LLM calls.
     """
+    task_category = AGENT_MODE_TASK_MAP.get((agent_mode or "auto").lower())
     history = memory_manager.get_messages(session_id)
     facts = long_term_memory.get_all_facts()
     messages = build_prompt(user_message, history, facts)
 
-    initial_reply = await run_tool_pipeline(messages)
+    initial_reply = await run_tool_pipeline(messages, task_category=task_category, selected_model=selected_model)
 
     full_reply = ""
 
@@ -148,7 +179,7 @@ async def generate_stream(user_message: str, session_id: str = DEFAULT_SESSION_I
         full_reply = initial_reply
         yield initial_reply
     else:
-        async for chunk in model_router.stream_chat(messages):
+        async for chunk in model_router.stream_chat(messages, task_category=task_category, selected_model=selected_model):
             full_reply += chunk
             yield chunk
 

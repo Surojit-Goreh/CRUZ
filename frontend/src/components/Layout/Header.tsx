@@ -41,7 +41,7 @@ export default function Header({
           <button
             className={`header-icon-btn ${orbStageOpen ? "active" : ""}`}
             onClick={onToggleOrbStage}
-            title={orbStageOpen ? "Hide 3D AI Orb" : "Show 3D AI Orb"}
+            title={orbStageOpen ? "Hide AI Avatar" : "Show AI Avatar"}
             type="button"
           >
             <Sparkles size={18} />

@@ -3,4 +3,6 @@ export interface Message {
   sender: "user" | "assistant";
   text: string;
   timestamp: string;
+  provider?: string;
+  model?: string;
 }
