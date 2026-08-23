@@ -26,14 +26,21 @@ CRUZ is a modular, private, and extensible AI assistant designed for pair progra
 - **Dual-Threshold VAD**: Voice Activity Detection with a 400ms pre-roll audio ring buffer to capture opening syllables cleanly.
 - **Neural Speech & STT**: STT powered by Whisper and Gemini Audio; TTS powered by **Kokoro-82M** with low-latency streaming sentence chunking.
 
-### 🛠️ 4. Autonomous Tool Execution & Agent Skills
+### 🧩 4. 100-Specialist Skills System (X001–X100)
+- **10 Structured Departments**: Command (X001–X010), Coding (X011–X020), Research (X021–X030), Writing (X031–X040), Visual (X041–X050), Data (X051–X060), Media (X061–X070), Productivity (X071–X080), Strategy (X081–X090), and Quality (X091–X100).
+- **Command Orchestration Layer (X001–X010)**: Supreme Commander, Intent Detector, Requirement Analyst, Master Planner, Department Router, Specialist Router, Task Decomposer, Context Manager, Progress Controller, and Final Synthesizer.
+- **Dynamic Capability-Based Routing**: Zero hardcoded mappings — selects the minimal optimal specialist set based on capability match scores, tool permissions, and task complexity.
+- **Quality Verification Gate (X091–X100)**: Logic Critic, Hallucination Detector, Fact Verification, and Code Verification with **X100 Supreme Judge** issuing binding verdicts (`PASS`, `PASS_WITH_WARNINGS`, `RETRY`, `FAIL`).
+- **10-Department Interactive UI**: Filter, search by specialist ID/capabilities, test DAG execution plans, and toggle specialists with SQLite persistence.
+
+### 🛠️ 5. Autonomous Tool Execution & Agent Skills
 - **Filesystem Operations**: Read, write, copy, move, rename, delete, search files, and zip/extract archives.
 - **Browser Automation**: Playwright-powered browser navigation, page reading, clicking, typing, and screenshots.
-- **Web Search & Research**: Live duckduckgo search and Firecrawl integration for crawling and markdown extraction.
+- **Web Search & Research**: Live multi-source search (Google, Amazon, Flipkart, Croma) and Firecrawl integration.
 - **AI Image Generation**: Built-in image generation tool saving generated assets locally.
 - **Desktop & System Control**: Launch desktop applications, inspect system performance, and switch agent modes.
 
-### 💾 5. Dual-Layer Memory Architecture
+### 💾 6. Dual-Layer Memory Architecture
 - **Short-Term Session Memory**: Sliding context window preserving conversational continuity.
 - **Persistent Long-Term Memory**: SQLite database storing extracted user facts, preferences, project context, and personal background, extracted asynchronously in the background.
 
@@ -107,7 +114,8 @@ cruz/
 │  ├─ config.py                 # Environment & configuration settings
 │  └─ requirements.txt          # Python dependencies
 ├─ docs/
-│  └─ ARCHITECTURE.md           # System architecture & strategic roadmap
+│  ├─ ARCHITECTURE.md           # System architecture & strategic roadmap
+│  └─ VRM_AVATAR_AND_RESOURCES.md # 3D Avatar specification & resource profiling
 ├─ frontend/
 │  ├─ public/
 │  │  └─ avatar.vrm             # 3D Anime Avatar model
@@ -180,7 +188,7 @@ npm run dev
 - [x] **Phase 3: Tool Execution** (Filesystem operations, Browser automation, Web search, Image generation)
 - [x] **Phase 4: Cloud Brain** (Multi-provider fallback routing across 7 providers, task-based model specialization)
 - [x] **Phase 5: Voice & 3D Avatar** (Continuous voice loop, Kokoro TTS, "Hey Cruz" wake word, Three.js VRM 3D Avatar)
-- [ ] **Phase 6: Custom Skills Plugin System** (Modular Python & prompt skills auto-discovery)
+- [x] **Phase 6: Custom Skills Plugin System** (Modular Python & prompt skills auto-discovery, UI toggle switches)
 - [ ] **Phase 7: Full OS & Desktop Automation** (Windows UIA accessibility integration & multi-app workflows)
 
 ---

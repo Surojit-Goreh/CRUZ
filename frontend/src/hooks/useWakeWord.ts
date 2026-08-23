@@ -33,37 +33,50 @@ declare global {
   }
 }
 
-// Patterns that trigger the wake word (including common STT misspellings)
-const WAKE_WORD_PATTERNS = [
-  /\bhey\s+cruz\b/i,
-  /\bhi\s+cruz\b/i,
-  /\bhello\s+cruz\b/i,
-  /\bok\s+cruz\b/i,
-  /\bokay\s+cruz\b/i,
-  /\bcruz\b/i,
-  /\bhey\s+cruise\b/i,
-  /\bhi\s+cruise\b/i,
-  /\bhello\s+cruise\b/i,
-  /\bok\s+cruise\b/i,
-  /\bokay\s+cruise\b/i,
-  /\bcruise\b/i,
-  /\bhey\s+crews\b/i,
-  /\bcrews\b/i,
-  /\bhey\s+kruz\b/i,
-  /\bkruz\b/i,
-  /\bhey\s+cross\b/i,
+// Broad phonetic keywords for "Cruz"
+const WAKE_KEYWORDS = [
+  "cruz", "cruise", "cruze", "cruse", "crooz", "kruz", "kruze", "crews", "crew", "cross", "crows", "cuz"
 ];
 
-function containsWakeWord(transcript: string): boolean {
-  const clean = transcript.trim().toLowerCase();
-  return WAKE_WORD_PATTERNS.some((pattern) => pattern.test(clean));
+const GREETINGS = [
+  "hey", "hi", "hello", "ok", "okay", "yo", "listen", "wake", "a", "the", "sup"
+];
+
+// Regex matching any greeting + wake sound, or standalone wake keyword
+const WAKE_WORD_REGEX = new RegExp(
+  `\\b(?:(?:${GREETINGS.join("|")})\\s+)?(?:${WAKE_KEYWORDS.join("|")}|chris|bruce|choose|clues|truth|groos)\\b`,
+  "i"
+);
+
+export interface WakeDetectionResult {
+  matched: boolean;
+  prompt: string;
+}
+
+export function parseWakeWord(transcript: string): WakeDetectionResult {
+  if (!transcript) return { matched: false, prompt: "" };
+
+  // Normalize punctuation and collapse whitespace
+  const clean = transcript
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+  const match = WAKE_WORD_REGEX.exec(clean);
+  if (match) {
+    const prompt = clean.slice(match.index + match[0].length).trim();
+    return { matched: true, prompt };
+  }
+
+  return { matched: false, prompt: "" };
 }
 
 interface UseWakeWordOptions {
   enabled?: boolean;
   voiceState: VoiceState;
   connected: boolean;
-  onWakeWord: () => void;
+  onWakeWord: (prompt?: string) => void;
 }
 
 export default function useWakeWord({
@@ -73,58 +86,88 @@ export default function useWakeWord({
   onWakeWord,
 }: UseWakeWordOptions) {
   const [isSupported] = useState(
-    () => Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)
+    () => Boolean(typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition))
   );
   const [isActive, setIsActive] = useState(false);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [lastDetected, setLastDetected] = useState<number | null>(null);
 
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const isRunningRef = useRef(false);
-  const shouldRunRef = useRef(enabled);
   const cooldownRef = useRef(false);
+  const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Synchronously evaluate shouldRun state
+  const shouldRun = enabled && connected && voiceState === "idle";
+  const shouldRunRef = useRef(shouldRun);
+  shouldRunRef.current = shouldRun;
+
+  // Pre-authorize microphone permission on mount
   useEffect(() => {
-    shouldRunRef.current = enabled && connected && voiceState === "idle";
-  }, [enabled, connected, voiceState]);
-
-  const handleWakeWordTrigger = useCallback(() => {
-    if (cooldownRef.current) return;
-    cooldownRef.current = true;
-    setLastDetected(Date.now());
-
-    console.log("🎤 Wake word 'Hey Cruz' detected! Starting voice turn...");
-
-    // Stop current recognition immediately to release mic for backend VAD recording
-    try {
-      recognitionRef.current?.abort();
-    } catch {
-      // ignore
+    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          setHasPermission(true);
+          // Release immediately so browser audio stack is unlocked
+          stream.getTracks().forEach((track) => track.stop());
+        })
+        .catch((err) => {
+          console.warn("Microphone permission check:", err);
+          setHasPermission(false);
+        });
     }
+  }, []);
 
-    onWakeWord();
+  const handleWakeWordTrigger = useCallback(
+    (prompt?: string) => {
+      if (cooldownRef.current) return;
+      cooldownRef.current = true;
+      setLastDetected(Date.now());
 
-    // Reset cooldown after 3 seconds
-    setTimeout(() => {
-      cooldownRef.current = false;
-    }, 3000);
-  }, [onWakeWord]);
+      console.log(`🎤 Wake word detected instantly! Prompt: "${prompt || '(none)'}"`);
 
-  // Initialize SpeechRecognition instance once
-  useEffect(() => {
-    const SpeechRecognitionClass =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+      // Immediately stop recognition to free microphone for backend VAD recording
+      try {
+        recognitionRef.current?.abort();
+      } catch {
+        // ignore
+      }
 
-    if (!SpeechRecognitionClass) {
-      console.warn("SpeechRecognition is not supported in this browser.");
+      onWakeWord(prompt);
+
+      // Short 2-second cooldown to prevent double triggering
+      setTimeout(() => {
+        cooldownRef.current = false;
+      }, 2000);
+    },
+    [onWakeWord]
+  );
+
+  // Start continuous, high-sensitivity SpeechRecognition
+  const startRecognition = useCallback(() => {
+    if (!isSupported || isRunningRef.current || !shouldRunRef.current || cooldownRef.current) {
       return;
     }
 
+    const SpeechRecognitionClass =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) return;
+
     try {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+      }
+
       const recognition = new SpeechRecognitionClass();
       recognition.continuous = true;
-      recognition.interimResults = true;
+      recognition.interimResults = true; // Ultra-low latency interim detection
       recognition.lang = "en-US";
-      recognition.maxAlternatives = 3;
+      recognition.maxAlternatives = 5; // Evaluate top 5 phonetic hypotheses
 
       recognition.onstart = () => {
         isRunningRef.current = true;
@@ -135,36 +178,37 @@ export default function useWakeWord({
         isRunningRef.current = false;
         setIsActive(false);
 
-        // Auto-restart if we should still be running and voice is idle
+        // Gapless, immediate restart (10ms)
         if (shouldRunRef.current && !cooldownRef.current) {
-          setTimeout(() => {
-            if (shouldRunRef.current && !isRunningRef.current) {
-              try {
-                recognition.start();
-              } catch {
-                // Ignore if already started
-              }
+          if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+          restartTimerRef.current = setTimeout(() => {
+            if (shouldRunRef.current && !isRunningRef.current && !cooldownRef.current) {
+              startRecognition();
             }
-          }, 300);
+          }, 10);
         }
       };
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        // "no-speech" and "aborted" are normal lifecycle events
-        if (event.error !== "no-speech" && event.error !== "aborted") {
-          console.warn("SpeechRecognition error:", event.error);
+        if (event.error === "not-allowed") {
+          console.warn("SpeechRecognition mic access denied.");
+          setHasPermission(false);
+        } else if (event.error !== "no-speech" && event.error !== "aborted") {
+          console.warn("SpeechRecognition notice:", event.error);
         }
       };
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         if (!shouldRunRef.current || cooldownRef.current) return;
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          for (let j = 0; j < result.length; j++) {
-            const transcript = result[j].transcript;
-            if (containsWakeWord(transcript)) {
-              handleWakeWordTrigger();
+        // Inspect all results and alternatives including interim hypotheses
+        for (let i = 0; i < event.results.length; i++) {
+          const res = event.results[i];
+          for (let j = 0; j < res.length; j++) {
+            const transcript = res[j]?.transcript || "";
+            const { matched, prompt } = parseWakeWord(transcript);
+            if (matched) {
+              handleWakeWordTrigger(prompt);
               return;
             }
           }
@@ -172,47 +216,43 @@ export default function useWakeWord({
       };
 
       recognitionRef.current = recognition;
+      recognition.start();
     } catch (e) {
-      console.error("Failed to initialize SpeechRecognition:", e);
+      console.warn("Failed to start SpeechRecognition:", e);
     }
+  }, [isSupported, handleWakeWordTrigger]);
 
-    return () => {
+  const stopRecognition = useCallback(() => {
+    if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+    const recognition = recognitionRef.current;
+    if (recognition && isRunningRef.current) {
       try {
-        recognitionRef.current?.abort();
+        recognition.stop();
       } catch {
         // ignore
       }
-      recognitionRef.current = null;
-    };
-  }, [handleWakeWordTrigger]);
-
-  // Manage start/stop based on voiceState & connection
-  useEffect(() => {
-    const recognition = recognitionRef.current;
-    if (!recognition || !isSupported) return;
-
-    if (shouldRunRef.current && !cooldownRef.current) {
-      if (!isRunningRef.current) {
-        try {
-          recognition.start();
-        } catch {
-          // Ignore if already started
-        }
-      }
-    } else {
-      if (isRunningRef.current) {
-        try {
-          recognition.stop();
-        } catch {
-          // ignore
-        }
-      }
     }
-  }, [voiceState, connected, enabled, isSupported]);
+    isRunningRef.current = false;
+    setIsActive(false);
+  }, []);
+
+  // Manage start/stop dynamically
+  useEffect(() => {
+    if (shouldRun) {
+      startRecognition();
+    } else {
+      stopRecognition();
+    }
+
+    return () => {
+      stopRecognition();
+    };
+  }, [shouldRun, startRecognition, stopRecognition]);
 
   return {
     isSupported,
     isActive,
+    hasPermission,
     lastDetected,
   };
 }

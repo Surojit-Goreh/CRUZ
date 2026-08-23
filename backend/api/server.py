@@ -14,6 +14,8 @@ from fastapi.staticfiles import StaticFiles
 from config import APP_NAME
 from api.routes import router
 from api.providers import router as providers_router
+from api.skills import router as skills_router
+from api.specialists import router as specialists_router
 from api.websocket import router as voice_ws_router
 
 from voice.event_dispatcher import EventDispatcher
@@ -45,6 +47,8 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # -----------------------------
 app.include_router(router)
 app.include_router(providers_router)
+app.include_router(skills_router)
+app.include_router(specialists_router)
 
 
 # -----------------------------
@@ -56,6 +60,7 @@ app.state.dispatcher = dispatcher
 # them only when a client actually opens the voice WebSocket.
 app.state.voice_manager = None
 app.state.voice_manager_lock = asyncio.Lock()
+
 
 # -----------------------------
 # Voice WebSocket
@@ -70,5 +75,29 @@ if __name__ == "__main__":
         host="127.0.0.1",
         port=8000,
         reload=True,
-        reload_excludes=["data/*", "*.wav", "*.pyc", "*.bin"],
+        reload_dirs=[
+            "api",
+            "brain",
+            "core",
+            "executor",
+            "memory",
+            "planner",
+            "services",
+            "skills",
+            "tools",
+            "voice",
+            "utils",
+        ],
+        reload_excludes=[
+            "data/*",
+            "data/**",
+            "logs/*",
+            "static/*",
+            "*.db*",
+            "*.wav",
+            "*.pyc",
+            "*.bin",
+            ".venv/*",
+            "__pycache__/*",
+        ],
     )

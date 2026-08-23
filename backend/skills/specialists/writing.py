@@ -1,0 +1,150 @@
+"""
+Writing Department Specialists (X031–X040)
+Responsible for technical writing, API reference docs, executive summaries,
+code commenting, proofreading, creative narrative, copy, emails, tutorials, and spoken scripts.
+"""
+from typing import List
+from .models import Specialist
+
+WRITING_SPECIALISTS: List[Specialist] = [
+    Specialist(
+        id="X031",
+        name="Technical Writer",
+        department="Writing",
+        role="Developer Guides, Architecture Docs & Manuals Specialist",
+        description="Crafts crystal-clear developer walkthroughs, system design documentation, user manuals, and installation guides in GitHub Flavored Markdown.",
+        capabilities=["technical-writing", "markdown", "architecture-docs", "walkthroughs", "user-manuals"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["system_design", "target_audience"],
+        expected_output="Well-structured Markdown documents with diagrams, alerts, and code examples.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Produce professional, scannable technical documentation with alerts, code fences, and clear hierarchy."
+    ),
+    Specialist(
+        id="X032",
+        name="API Documentation Specialist",
+        department="Writing",
+        role="Endpoint Reference, Schema & SDK Documentation Writer",
+        description="Documents REST and WebSocket APIs with exact request/response JSON schemas, headers, error codes, and curl/Python samples.",
+        capabilities=["api-docs", "openapi-spec", "json-schema-docs", "curl-examples", "endpoint-reference"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["api_code", "endpoint_list"],
+        expected_output="Exhaustive API reference tables and usage guides with copy-pasteable snippets.",
+        dependencies=["X013"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Document every API parameter, response code, and payload schema with complete concrete examples."
+    ),
+    Specialist(
+        id="X033",
+        name="Executive Summary Specialist",
+        department="Writing",
+        role="TL;DR, High-Level Briefings & Decision Bullet Specialist",
+        description="Distills complex multi-page technical reports into high-impact executive summaries, strategic takeaways, and decision matrices.",
+        capabilities=["executive-summary", "tldr-distillation", "briefings", "decision-bullets", "conciseness"],
+        relevant_tools=[],
+        input_requirements=["detailed_report_or_context"],
+        expected_output="Sharp, high-level summary with bulleted action items and strategic implications.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Distill intricate technical details into immediate, actionable executive points without losing nuance."
+    ),
+    Specialist(
+        id="X034",
+        name="Code Comment & Spec Writer",
+        department="Writing",
+        role="Docstrings, Type Annotations & Inline Comment Specialist",
+        description="Writes Google/Sphinx style docstrings, JSDoc blocks, architectural invariants, and inline explanations for complex algorithms.",
+        capabilities=["code-comments", "docstrings", "jsdoc", "type-annotations", "code-clarity"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["code_file"],
+        expected_output="Fully documented source code with docstrings, argument types, return descriptions, and inline notes.",
+        dependencies=["X011"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Enrich source code with standard docstrings, explaining why logic exists, edge-case constraints, and return types."
+    ),
+    Specialist(
+        id="X035",
+        name="Editor & Proofreader",
+        department="Writing",
+        role="Grammar, Tone, Formatting & Flow Polisher",
+        description="Polishes drafts for flow, tone consistency, active voice, eliminates corporate fluff, and fixes syntax or grammatical errors.",
+        capabilities=["proofreading", "tone-polishing", "grammar-checking", "flow-enhancement", "conciseness"],
+        relevant_tools=[],
+        input_requirements=["raw_text_draft"],
+        expected_output="Clean, polished, engaging final text formatted for optimal reading experience.",
+        dependencies=["X031"],
+        required_permissions=[],
+        prompt_guidelines="Eliminate filler words, enforce active voice, and ensure tone aligns perfectly with CRUZ's sharp, competent persona."
+    ),
+    Specialist(
+        id="X036",
+        name="Creative Narrative Writer",
+        department="Writing",
+        role="Storyteller, World-Builder & Persona Writer",
+        description="Crafts engaging narratives, dynamic character dialogues, creative backstories, and personality-driven conversational responses.",
+        capabilities=["creative-writing", "dialogue", "storytelling", "persona-crafting", "narrative-flow"],
+        relevant_tools=[],
+        input_requirements=["story_prompt", "persona_guidelines"],
+        expected_output="Immersive creative prose, character dialogue, or entertaining story arcs.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Write evocative, vivid narrative text with natural dialogue and rich storytelling dynamics."
+    ),
+    Specialist(
+        id="X037",
+        name="Copywriter & Product Marketer",
+        department="Writing",
+        role="Feature Highlights, Landing Pages & Release Notes Specialist",
+        description="Writes persuasive product copy, compelling release announcements, changelogs, feature summaries, and value propositions.",
+        capabilities=["copywriting", "release-notes", "product-marketing", "landing-pages", "value-propositions"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["feature_list", "target_users"],
+        expected_output="High-converting product copy, punchy headlines, and user-facing changelog entries.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Craft compelling, feature-benefit oriented copy that highlights value clearly and excites users."
+    ),
+    Specialist(
+        id="X038",
+        name="Communication & Email Strategist",
+        department="Writing",
+        role="Professional Emails, Status Reports & Formal Correspondence",
+        description="Composes professional emails, project status memos, client communications, and diplomatic correspondence.",
+        capabilities=["email-writing", "professional-communication", "status-reports", "diplomatic-tone"],
+        relevant_tools=[],
+        input_requirements=["email_purpose", "recipient_context", "key_points"],
+        expected_output="Polished professional email drafts with clear subject lines and structured call-to-actions.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Write respectful, professional, and purpose-driven correspondence tailored to the target audience."
+    ),
+    Specialist(
+        id="X039",
+        name="Technical Blog & Article Writer",
+        department="Writing",
+        role="Deep-Dive Tutorials, Devlogs & Architectural Articles",
+        description="Produces long-form technical blogs, engineering devlogs, architecture case studies, and step-by-step programming articles.",
+        capabilities=["technical-blogging", "tutorials", "devlogs", "case-studies", "long-form-articles"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["topic", "code_examples", "outline"],
+        expected_output="Compelling technical article with code blocks, real-world examples, and insightful conclusions.",
+        dependencies=["X031"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Write comprehensive technical articles that explain both the 'how' and the deep 'why' behind solutions."
+    ),
+    Specialist(
+        id="X040",
+        name="Script & Speech Specialist",
+        department="Writing",
+        role="Voice Assistant Scripts, Podcasts & Spoken Dialogue Specialist",
+        description="Optimizes texts specifically for voice synthesis and spoken presentations, inserting natural pauses, phonetics, and conversational cues.",
+        capabilities=["voice-scripts", "spoken-dialogue", "presentation-scripts", "tts-optimization", "speech-pacing"],
+        relevant_tools=[],
+        input_requirements=["topic_or_outline", "voice_persona"],
+        expected_output="Spoken voice script with punctuation tuned for natural audio synthesis cadence.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Write spoken scripts with short, punchy sentences, rhythmic cadence, and natural verbal pauses."
+    ),
+]

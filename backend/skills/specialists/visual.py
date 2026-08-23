@@ -1,0 +1,150 @@
+"""
+Visual Department Specialists (X041–X050)
+Responsible for UI/UX architecture, design systems, image generation prompting,
+flowcharts, 3D VRM avatar integration, asset optimization, and color theory.
+"""
+from typing import List
+from .models import Specialist
+
+VISUAL_SPECIALISTS: List[Specialist] = [
+    Specialist(
+        id="X041",
+        name="UI/UX Architecture Specialist",
+        department="Visual",
+        role="Interface Hierarchy, User Journeys & Wireframe Architect",
+        description="Designs user journey flows, component hierarchies, accessibility compliance (WCAG), and frictionless layout wireframes.",
+        capabilities=["ui-ux-design", "wireframing", "user-journeys", "accessibility", "interaction-design"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["feature_spec", "user_goals"],
+        expected_output="Wireframe layouts, component interaction specifications, and UX flow diagrams.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Create intuitive, uncluttered UI/UX architectures that reduce friction and enhance user satisfaction."
+    ),
+    Specialist(
+        id="X042",
+        name="Design System & CSS Stylist",
+        department="Visual",
+        role="Glassmorphism, Tokens & Responsive CSS Architect",
+        description="Authors modern CSS design tokens, HSL color palettes, dark glassmorphism effects, responsive grid layouts, and micro-animations.",
+        capabilities=["css-styling", "design-tokens", "glassmorphism", "responsive-design", "micro-animations"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["css_file", "theme_spec"],
+        expected_output="Modern, robust CSS rules utilizing CSS variables, backdrop-filter, and smooth transitions.",
+        dependencies=["X012"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Implement visually stunning dark glassmorphic CSS styling with smooth transitions and perfect responsive alignment."
+    ),
+    Specialist(
+        id="X043",
+        name="Image Prompt Engineer",
+        department="Visual",
+        role="Generative AI Prompt Crafter & Art Director",
+        description="Crafts detailed, artistic prompts for Flux, Stable Diffusion, and Pollinations with lighting, composition, style, and camera angles.",
+        capabilities=["image-prompting", "generative-art", "flux-prompts", "photorealism-tuning", "composition"],
+        relevant_tools=["generate_image"],
+        input_requirements=["visual_concept", "art_style"],
+        expected_output="Detailed prompt strings with camera lens, lighting parameters, and aspect ratio flags.",
+        dependencies=["X003"],
+        required_permissions=["image_generation"],
+        prompt_guidelines="Formulate rich, vivid generative image prompts with specific camera angles, volumetric lighting, and artistic styling."
+    ),
+    Specialist(
+        id="X044",
+        name="Diagram & Flowchart Architect",
+        department="Visual",
+        role="Mermaid.js Flowcharts, Architecture & Sequence Diagrams",
+        description="Generates valid, readable Mermaid.js syntax diagrams (sequence, flowchart, state, ERD, class diagrams) for visual architecture clarity.",
+        capabilities=["mermaid-diagrams", "flowcharts", "sequence-diagrams", "architecture-visualization", "erd"],
+        relevant_tools=[],
+        input_requirements=["architecture_spec", "system_flow"],
+        expected_output="Syntactically valid Mermaid.js diagram blocks wrapped in markdown fences.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Produce clean, error-free Mermaid.js diagrams that visually clarify system components and data flows."
+    ),
+    Specialist(
+        id="X045",
+        name="3D & VRM Scene Designer",
+        department="Visual",
+        role="Three.js & 3D Avatar Scene Specialist",
+        description="Configures Three.js WebGL scenes, VRM avatar lighting, camera framing, orbit controls, and mesh rendering optimizations.",
+        capabilities=["threejs", "vrm-avatars", "3d-graphics", "webgl", "scene-lighting", "camera-controls"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["3d_scene_code", "avatar_model_spec"],
+        expected_output="Three.js canvas setup, VRM model loaders, lighting configurations, and animation loops.",
+        dependencies=["X012"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Optimize Three.js WebGL rendering for 60fps avatar animation with realistic studio lighting."
+    ),
+    Specialist(
+        id="X046",
+        name="Asset Optimizer",
+        department="Visual",
+        role="Image Compression, Formats & Asset Bundler",
+        description="Optimizes web asset formats (WebP, SVG, PNG), manages image resolutions, sprite sheets, and asset loading performance.",
+        capabilities=["asset-optimization", "webp-conversion", "svg-optimization", "image-compression", "asset-bundling"],
+        relevant_tools=["read_file", "write_file", "run_terminal_command"],
+        input_requirements=["asset_paths", "compression_targets"],
+        expected_output="Optimized asset pipeline specifications and compressed web-ready images.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Minimize image payload sizes while preserving visual clarity and sharp resolution."
+    ),
+    Specialist(
+        id="X047",
+        name="Color & Theme Harmonizer",
+        department="Visual",
+        role="Palette Generation, Contrast & Color Theory Specialist",
+        description="Selects harmonious color palettes, checks WCAG AA/AAA contrast ratios, and creates cohesive dark and light theme palettes.",
+        capabilities=["color-theory", "palette-generation", "contrast-checking", "wcag-compliance", "theming"],
+        relevant_tools=[],
+        input_requirements=["brand_theme", "contrast_requirements"],
+        expected_output="Cohesive HSL/Hex color palette table with contrast score validations.",
+        dependencies=["X041"],
+        required_permissions=[],
+        prompt_guidelines="Design balanced, accessible color schemes with tailored contrast ratios and premium visual hierarchy."
+    ),
+    Specialist(
+        id="X048",
+        name="Icon & Visual Element Designer",
+        department="Visual",
+        role="Lucide Icon Mapping & SVG Component Designer",
+        description="Selects context-perfect Lucide icons, crafts custom inline SVGs, and designs visual badges, indicators, and chips.",
+        capabilities=["iconography", "lucide-icons", "svg-design", "badges", "visual-indicators"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["feature_context", "ui_elements"],
+        expected_output="Icon selection mappings and clean SVG code snippets.",
+        dependencies=["X012"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Select precise, intuitive icons and visual indicators that reinforce interface meaning instantly."
+    ),
+    Specialist(
+        id="X049",
+        name="Visual Storyboard Specialist",
+        department="Visual",
+        role="UI Progression, State Walkthrough & Slide Designer",
+        description="Designs step-by-step UI state progressions, walkthrough slide carousels, and before/after visual demonstration cards.",
+        capabilities=["visual-storyboarding", "ui-states", "walkthrough-slides", "carousels", "before-after-views"],
+        relevant_tools=[],
+        input_requirements=["user_flow", "ui_progression"],
+        expected_output="Structured walkthrough cards and carousel slide definitions.",
+        dependencies=["X041"],
+        required_permissions=[],
+        prompt_guidelines="Structure visual step-by-step walkthroughs showing clear state progressions and outcomes."
+    ),
+    Specialist(
+        id="X050",
+        name="Layout & Responsive Grid Architect",
+        department="Visual",
+        role="Flexbox, CSS Grid & Viewport Breakpoint Specialist",
+        description="Architects complex responsive layouts, split-panel containers, sidebar toggles, and mobile-to-desktop grid systems.",
+        capabilities=["css-grid", "flexbox", "responsive-layouts", "viewports", "container-queries"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["layout_specs", "breakpoint_targets"],
+        expected_output="Fluid, responsive layout structures with container queries and resilient flex/grid rules.",
+        dependencies=["X042"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Ensure interfaces adapt seamlessly across all display sizes, eliminating horizontal overflow and layout shifts."
+    ),
+]

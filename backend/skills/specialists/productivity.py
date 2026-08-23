@@ -1,0 +1,150 @@
+"""
+Productivity Department Specialists (X071–X080)
+Responsible for workflow automation, workspace organization, desktop control,
+note management, task scheduling, standup logs, SOP creation, and project lifecycle tracking.
+"""
+from typing import List
+from .models import Specialist
+
+PRODUCTIVITY_SPECIALISTS: List[Specialist] = [
+    Specialist(
+        id="X071",
+        name="Workflow Automator",
+        department="Productivity",
+        role="Multi-Step Task Automation & Script Chaining Specialist",
+        description="Chains repetitive multi-step actions into automated workflows, combining terminal commands, file edits, and tool pipelines.",
+        capabilities=["workflow-automation", "action-chaining", "process-automation", "script-orchestration"],
+        relevant_tools=["read_file", "write_file", "run_terminal_command"],
+        input_requirements=["workflow_goal", "step_definitions"],
+        expected_output="Automated execution script or multi-step workflow pipeline.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write", "terminal_exec"],
+        prompt_guidelines="Eliminate manual developer toil by automating repetitive action sequences into reliable scripts."
+    ),
+    Specialist(
+        id="X072",
+        name="Workspace Organizer",
+        department="Productivity",
+        role="Project Directory, File Hygiene & Cleanup Specialist",
+        description="Cleans project directories, reorganizes orphaned files, eliminates temporary scratch data, and enforces directory structures.",
+        capabilities=["workspace-organization", "directory-hygiene", "cleanup", "file-structuring", "orphaned-files"],
+        relevant_tools=["list_directory", "search_files", "move_path", "delete_path", "zip_path"],
+        input_requirements=["workspace_root", "organization_rules"],
+        expected_output="Workspace audit report with directory restructuring plan and executed cleanups.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Maintain pristine workspace directory hygiene with logical folder hierarchies and clean artifact storage."
+    ),
+    Specialist(
+        id="X073",
+        name="Desktop Automator",
+        department="Productivity",
+        role="OS Application, Process & System Health Automator",
+        description="Controls desktop applications (VS Code, Chrome, Terminal), checks CPU/RAM hardware metrics, and manages background processes.",
+        capabilities=["desktop-automation", "app-launching", "system-health", "process-monitoring", "hardware-metrics"],
+        relevant_tools=["open_app", "get_system_info", "list_processes", "run_terminal_command"],
+        input_requirements=["target_app_or_action"],
+        expected_output="Desktop execution status, application window confirmation, and system health stats.",
+        dependencies=["X003"],
+        required_permissions=["system_read", "terminal_exec"],
+        prompt_guidelines="Execute desktop application actions safely while monitoring system resource thresholds."
+    ),
+    Specialist(
+        id="X074",
+        name="Note & Knowledge Manager",
+        department="Productivity",
+        role="Long-Term Memory, Fact Curation & Daily Notes Specialist",
+        description="Curates facts into long-term SQLite memory, generates structured daily notes, and links conceptual knowledge across sessions.",
+        capabilities=["knowledge-management", "long-term-memory", "daily-notes", "fact-curation", "concept-linking"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["facts_to_save", "note_category"],
+        expected_output="Structured knowledge cards, updated SQLite memory records, and organized Markdown notes.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Organize knowledge notes into clear, retrievable summaries linked by concept and date."
+    ),
+    Specialist(
+        id="X075",
+        name="Task & Milestone Planner",
+        department="Productivity",
+        role="Work Estimation, Sprint Goals & Checklist Breakdown Specialist",
+        description="Breaks large projects into phased milestones, provides realistic time estimates, and creates interactive markdown checklists.",
+        capabilities=["task-breakdown", "milestone-planning", "estimation", "checklists", "sprint-scoping"],
+        relevant_tools=[],
+        input_requirements=["project_scope", "target_deadline"],
+        expected_output="Phased milestone roadmaps with time estimates and interactive checklists.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Structure projects into achievable milestones with concrete deliverables and clear completion criteria."
+    ),
+    Specialist(
+        id="X076",
+        name="Standup & Log Specialist",
+        department="Productivity",
+        role="Daily Standups, Session Recaps & Progress Log Specialist",
+        description="Generates daily standup summaries (What was done, what is next, blockers), session recaps, and git commit changelogs.",
+        capabilities=["standup-logs", "session-recaps", "progress-tracking", "changelogs", "blocker-detection"],
+        relevant_tools=["read_file"],
+        input_requirements=["session_history", "completed_tasks"],
+        expected_output="Crisp daily standup format: Completed, Next Steps, Blockers, and Highlights.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Formulate concise daily standup logs highlighting concrete achievements and identifying any blockers."
+    ),
+    Specialist(
+        id="X077",
+        name="Time & Focus Coach",
+        department="Productivity",
+        role="Eisenhower Prioritization & Deep Work Strategy Specialist",
+        description="Applies Eisenhower Matrix triage (Urgent/Important), Pomodoro focus schedules, and eliminates cognitive context-switching.",
+        capabilities=["time-management", "eisenhower-matrix", "focus-coaching", "priority-triage", "deep-work"],
+        relevant_tools=[],
+        input_requirements=["task_list", "time_budget"],
+        expected_output="Prioritized 4-quadrant task matrix with recommended focus blocks and schedule allocation.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Prioritize tasks ruthlessly to protect deep focus and maximize output on high-leverage activities."
+    ),
+    Specialist(
+        id="X078",
+        name="Meeting & Conversation Summarizer",
+        department="Productivity",
+        role="Discussion Takeaways, Decisions & Action Item Extractor",
+        description="Analyzes long transcripts, distills key discussion takeaways, records decisions made, and assigns clear action items.",
+        capabilities=["meeting-summary", "action-items", "decision-log", "transcript-distillation"],
+        relevant_tools=[],
+        input_requirements=["conversation_transcript"],
+        expected_output="Executive summary of discussion with decisions table and bulleted action items with owners.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Extract decisions and concrete action items from discussions with 100% clarity and ownership."
+    ),
+    Specialist(
+        id="X079",
+        name="SOP & Checklist Architect",
+        department="Productivity",
+        role="Standard Operating Procedures & Safety Checklists Specialist",
+        description="Authors foolproof Standard Operating Procedures (SOPs), deployment runbooks, rollback guides, and pre-flight checklists.",
+        capabilities=["sop-authoring", "runbooks", "rollback-guides", "safety-checklists", "procedure-design"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["operational_procedure", "critical_safeguards"],
+        expected_output="Step-by-step SOP with pre-flight prerequisites, numbered actions, and rollback protocols.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Design comprehensive, step-by-step SOPs that minimize human error and include explicit rollback procedures."
+    ),
+    Specialist(
+        id="X080",
+        name="Project Lifecycle Manager",
+        department="Productivity",
+        role="Semantic Versioning, Release Readiness & Dependency Health",
+        description="Tracks semantic versions (SemVer), audits npm/pip dependency vulnerabilities, checks release criteria, and manages deprecations.",
+        capabilities=["project-lifecycle", "semver", "release-readiness", "dependency-health", "deprecation-management"],
+        relevant_tools=["read_file", "run_terminal_command"],
+        input_requirements=["project_manifest", "version_target"],
+        expected_output="Release readiness report with SemVer recommendation and dependency audit summary.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Ensure project stability and release readiness across dependency trees and version lifecycles."
+    ),
+]

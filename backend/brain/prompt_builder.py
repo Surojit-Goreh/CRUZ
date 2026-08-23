@@ -11,8 +11,15 @@ def build_prompt(
     user_message: str,
     history: Optional[List[Dict[str, str]]] = None,
     long_term_facts: Optional[List[Dict[str, str]]] = None,
+    skill_instructions: Optional[str] = None,
 ):
     system_content = SYSTEM_PROMPT
+
+    if skill_instructions and skill_instructions.strip():
+        system_content += "\n\n=====================================================\n"
+        system_content += "ACTIVE SKILLS & WORKFLOW GUIDELINES\n"
+        system_content += "=====================================================\n"
+        system_content += skill_instructions.strip()
 
     if long_term_facts:
         system_content += "\n\n" + _format_facts(long_term_facts)

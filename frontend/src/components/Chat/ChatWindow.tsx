@@ -4,23 +4,35 @@ import "./ChatWindow.css";
 import ChatMessage from "./ChatMessage";
 import WelcomeScreen from "./WelcomeScreen";
 import TypingIndicator from "./TypingIndicator";
+import ActivityIndicator from "./ActivityIndicator";
 
-import type { Message } from "../../types/chat";
+import type { Message, ActivityState } from "../../types/chat";
 
 interface Props {
   messages: Message[];
   isTyping: boolean;
+  activityState?: ActivityState | null;
   onSend?: (text: string) => void;
+  onStop?: () => void;
 }
 
-export default function ChatWindow({ messages, isTyping, onSend }: Props) {
+export default function ChatWindow({
+  messages,
+  isTyping,
+  activityState,
+  onSend,
+  onStop,
+}: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, activityState]);
 
-  if (messages.length === 0 && !isTyping) {
+  const hasActivity = Boolean(activityState && activityState.status === "processing");
+  const isBusy = isTyping || hasActivity;
+
+  if (messages.length === 0 && !isBusy) {
     return (
       <div className="chat-window empty">
         <WelcomeScreen onSelectPrompt={onSend} />
@@ -36,7 +48,14 @@ export default function ChatWindow({ messages, isTyping, onSend }: Props) {
         {visibleMessages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
-        {isTyping && <TypingIndicator />}
+
+        {/* Temporary activity/thinking UI while backend processes request */}
+        {hasActivity && activityState ? (
+          <ActivityIndicator activityState={activityState} onStop={onStop} />
+        ) : (
+          isTyping && <TypingIndicator />
+        )}
+
         <div ref={bottomRef} />
       </div>
     </div>

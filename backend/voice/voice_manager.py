@@ -1,11 +1,11 @@
 import re
 import asyncio
 import time
-from typing import AsyncIterator, Callable, Optional
+from typing import AsyncIterator, Callable, Optional, Any
 from .audio import record_audio, save_wav, play_audio, AudioPlayerQueue
 from .speech_to_text import SpeechToText
 from .tts import TextToSpeech, audio_to_base64_wav
-from .sentence_chunker import stream_sentences, SentenceChunker
+from .sentence_chunker import stream_sentences, SentenceChunker, clean_text_for_tts
 from brain.llm import generate_stream, generate_response
 from services.model_router import model_router
 from services.providers.classifier import detect_agent_mode_intent
@@ -39,42 +39,48 @@ class VoiceManager:
     def speech_to_text(self, audio_data) -> str:
         return self.stt.transcribe(audio_data)
 
+    def speech_to_text_with_info(self, audio_data) -> tuple:
+        return self.stt.transcribe_with_info(audio_data)
+
     def speak(self, text: str, on_start: Optional[Callable[[], None]] = None):
         audio, sample_rate = self.tts.synthesize(text)
         if on_start:
             on_start()
         play_audio(audio, sample_rate)
 
-    async def stream_reply_tts(self, token_stream: AsyncIterator[str]) -> str:
+    async def stream_reply_tts(self, token_stream: AsyncIterator[Any]) -> str:
         """
-        Consumes an LLM token stream asynchronously, chunks it into natural sentences,
-        synthesizes each sentence into speech with Kokoro TTS, emits WebSocket audio events,
-        and enqueues audio chunks to the audio player for gapless, overlapping playback.
+        Consumes an LLM token stream asynchronously, forwards activity and plan events in real-time,
+        chunks text into natural sentences, synthesizes speech with Kokoro TTS, and enqueues audio
+        for smooth playback.
         """
         full_reply = ""
         sentence_idx = 0
+        current_plan = None
         loop = asyncio.get_event_loop()
+        chunker = SentenceChunker()
 
-        async for sentence in stream_sentences(token_stream):
-            full_reply += (" " if full_reply else "") + sentence
-            sentence_clean = re.sub(r"[*_`#~]", "", sentence).strip()
-            # Clean internal command tokens from spoken TTS
+        async def process_sentence(sentence: str):
+            nonlocal full_reply, sentence_idx
+            cleaned = clean_text_for_tts(sentence)
+            if not cleaned:
+                return
+
+            full_reply += (" " if full_reply else "") + cleaned
+            sentence_clean = re.sub(r"[*_`#~]", "", cleaned).strip()
             sentence_clean = re.sub(r"AGENT_MODE_SWITCH:\w+:\s*", "", sentence_clean).strip()
             if not sentence_clean:
-                continue
+                return
 
-            # Synthesize sentence speech in thread pool to avoid blocking async event loop
+            # Synthesize sentence speech in thread pool
             audio_chunk, sample_rate = await loop.run_in_executor(
                 None, self.tts.synthesize, sentence_clean
             )
 
-            # Encode as base64 WAV for WebSocket streaming to frontend
             audio_b64 = audio_to_base64_wav(audio_chunk, sample_rate) if audio_chunk is not None else None
+            provider_info = model_router.last_provider_info
 
-            provider_name = model_router.last_provider_info.get("provider_name")
-            model_name = model_router.last_provider_info.get("model")
-
-            # Push audio chunk and text event over WebSocket immediately
+            # Push audio chunk, plan, and multi-model metadata over WebSocket
             self._emit(
                 "speaking",
                 text=sentence_clean,
@@ -82,15 +88,46 @@ class VoiceManager:
                 sample_rate=sample_rate,
                 sentence_index=sentence_idx,
                 reply=full_reply,
-                provider=provider_name,
-                model=model_name,
+                provider=provider_info.get("provider_name"),
+                model=provider_info.get("model"),
+                models_used=provider_info.get("models_used", []),
+                plan=current_plan,
             )
 
-            # Enqueue audio chunk for gapless, non-blocking local playback
+            # Enqueue audio chunk for gapless local playback
             if audio_chunk is not None and len(audio_chunk) > 0:
                 self.audio_player.enqueue(audio_chunk, sample_rate)
 
             sentence_idx += 1
+
+        async for item in token_stream:
+            if not item:
+                continue
+
+            # 1. Structured Plan Event
+            if isinstance(item, dict) and item.get("type") == "plan":
+                current_plan = item.get("plan")
+                self._emit("plan", plan=current_plan)
+                continue
+
+            # 2. Activity Event (Thinking progress, active specialists, tools)
+            if hasattr(item, "to_dict"):
+                self._emit("activity", **item.to_dict())
+                continue
+            elif isinstance(item, dict):
+                self._emit("activity", **item)
+                continue
+
+            # 3. Text token
+            if isinstance(item, str):
+                sentences = chunker.add_token(item)
+                for sentence in sentences:
+                    await process_sentence(sentence)
+
+        for remaining_sentence in chunker.flush():
+            await process_sentence(remaining_sentence)
+
+        self.last_plan = current_plan
 
         # Wait for all enqueued audio chunks to finish playback
         if sentence_idx > 0:
@@ -110,13 +147,16 @@ class VoiceManager:
 
             # --- transcribe ---
             self._emit("transcribing")
-            transcript = await loop.run_in_executor(None, self.speech_to_text, audio)
+            transcript, stt_info = await loop.run_in_executor(None, self.stt.transcribe_with_info, audio)
 
             if not transcript.strip():
                 self._emit("idle")
                 return {"success": False, "transcript": "", "reply": "",
                         "error": "No speech detected",
-                        "latency_ms": int((time.monotonic() - start) * 1000)}
+                        "latency_ms": int((time.monotonic() - start) * 1000),
+                        "stt_provider": stt_info.get("provider"),
+                        "stt_model": stt_info.get("model"),
+                        "stt_latency_ms": stt_info.get("latency_ms", 0)}
 
             # Check if user explicitly asked to change mode by voice
             intent_mode = detect_agent_mode_intent(transcript)
@@ -126,7 +166,13 @@ class VoiceManager:
 
             # Emitted the moment STT finishes — the client shows this as
             # the user's chat bubble and shows the Thinking... indicator.
-            self._emit("thinking", transcript=transcript)
+            self._emit(
+                "thinking",
+                transcript=transcript,
+                stt_provider=stt_info.get("provider"),
+                stt_model=stt_info.get("model"),
+                stt_latency_ms=stt_info.get("latency_ms", 0),
+            )
 
             # Stream LLM tokens -> chunk into sentences -> Kokoro TTS -> push WebSocket audio chunks
             token_stream = generate_stream(transcript, agent_mode=intent_mode or "auto")
@@ -147,21 +193,32 @@ class VoiceManager:
             # Check if agent mode switch token was emitted or detected in reply
             agent_mode_match = re.search(r"AGENT_MODE_SWITCH:(\w+):", reply)
             detected_mode = agent_mode_match.group(1) if agent_mode_match else intent_mode or detect_agent_mode_intent(reply)
-            cleaned_reply = re.sub(r"AGENT_MODE_SWITCH:\w+:\s*", "", reply).strip() if agent_mode_match else reply
+            
+            clean_text = clean_text_for_tts(reply)
+            cleaned_reply = re.sub(r"AGENT_MODE_SWITCH:\w+:\s*", "", clean_text).strip() if agent_mode_match else clean_text
+
+            if not cleaned_reply and detected_mode:
+                cleaned_reply = f"Switched to {detected_mode.title()} mode."
 
             if detected_mode:
                 self._emit("agent_mode_changed", agent_mode=detected_mode)
 
             self._emit("idle")
+            provider_info = model_router.last_provider_info
             return {
                 "success": True,
                 "transcript": transcript,
                 "reply": cleaned_reply,
                 "error": None,
                 "latency_ms": int((time.monotonic() - start) * 1000),
-                "provider": model_router.last_provider_info.get("provider_name"),
-                "model": model_router.last_provider_info.get("model"),
+                "provider": provider_info.get("provider_name"),
+                "model": provider_info.get("model"),
+                "models_used": provider_info.get("models_used", []),
+                "plan": getattr(self, "last_plan", None),
                 "agent_mode": detected_mode,
+                "stt_provider": stt_info.get("provider"),
+                "stt_model": stt_info.get("model"),
+                "stt_latency_ms": stt_info.get("latency_ms", 0),
             }
 
         except Exception as e:

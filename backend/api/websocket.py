@@ -52,6 +52,8 @@ async def voice_websocket(websocket: WebSocket):
                 )
                 await websocket.send_json({"state": "result", **result})
                 logger.info("sent result")
+
+
             elif action == "chat_voice":
                 voice_manager = await get_voice_manager()
                 user_msg = msg.get("message", "")
@@ -73,14 +75,17 @@ async def voice_websocket(websocket: WebSocket):
                     dispatcher.publish({"state": "agent_mode_changed", "agent_mode": detected_mode})
 
                 dispatcher.publish({"state": "idle"})
+                provider_info = model_router.last_provider_info
                 await websocket.send_json({
                     "state": "result",
                     "success": True,
                     "reply": cleaned_reply,
                     "transcript": user_msg,
                     "error": None,
-                    "provider": model_router.last_provider_info.get("provider_name"),
-                    "model": model_router.last_provider_info.get("model"),
+                    "provider": provider_info.get("provider_name"),
+                    "model": provider_info.get("model"),
+                    "models_used": provider_info.get("models_used", []),
+                    "plan": getattr(voice_manager, "last_plan", None),
                     "agent_mode": detected_mode,
                 })
     except WebSocketDisconnect:

@@ -79,6 +79,7 @@ async def chat(request: ChatRequest):
 
 
 import json
+from core.activity import ActivityEvent
 
 @router.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
@@ -89,22 +90,35 @@ async def chat_stream(request: ChatRequest):
     async def event_generator():
         sent_metadata = False
         try:
-            async for chunk in generate_stream(
+            async for item in generate_stream(
                 request.message,
                 session_id,
                 agent_mode=effective_mode,
                 selected_model=request.model,
             ):
-                clean_chunk = re.sub(r"AGENT_MODE_SWITCH:\w+:\s*", "", chunk)
-                if clean_chunk:
-                    if not sent_metadata:
-                        provider_info = model_router.last_provider_info
-                        yield f"event: metadata\ndata: {json.dumps(provider_info)}\n\n"
-                        sent_metadata = True
-                    yield f"event: token\ndata: {json.dumps(clean_chunk)}\n\n"
+                if isinstance(item, ActivityEvent):
+                    yield f"event: activity\ndata: {json.dumps(item.to_dict())}\n\n"
+                elif isinstance(item, dict):
+                    if item.get("type") == "plan":
+                        yield f"event: plan\ndata: {json.dumps(item.get('plan', {}))}\n\n"
+                    else:
+                        yield f"event: activity\ndata: {json.dumps(item)}\n\n"
+                elif isinstance(item, str):
+                    clean_chunk = re.sub(r"AGENT_MODE_SWITCH:\w+:\s*", "", item)
+                    if clean_chunk:
+                        if not sent_metadata:
+                            provider_info = model_router.last_provider_info
+                            yield f"event: metadata\ndata: {json.dumps(provider_info)}\n\n"
+                            sent_metadata = True
+                        yield f"event: token\ndata: {json.dumps(clean_chunk)}\n\n"
+            # Send latest provider and multi-model metadata before completion
+            final_metadata = model_router.last_provider_info
+            yield f"event: metadata\ndata: {json.dumps(final_metadata)}\n\n"
+            yield f"event: done\ndata: {json.dumps({'done': True})}\n\n"
         except Exception as exc:
             logger.exception("chat stream failed")
-            yield f"event: error\ndata: {json.dumps(str(exc))}\n\n"
+            safe_error_msg = "Unable to complete the request. Please check server logs or try again."
+            yield f"event: error\ndata: {json.dumps(safe_error_msg)}\n\n"
 
     headers = {}
     if intent_mode:
@@ -115,6 +129,8 @@ async def chat_stream(request: ChatRequest):
         media_type="text/event-stream",
         headers=headers,
     )
+
+
 
 
 

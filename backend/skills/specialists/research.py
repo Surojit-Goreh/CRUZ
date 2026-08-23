@@ -1,0 +1,150 @@
+"""
+Research Department Specialists (X021–X030)
+Responsible for deep web research, market intelligence, API/SDK exploration,
+source evaluation, academic literature, web crawling, and fact verification.
+"""
+from typing import List
+from .models import Specialist
+
+RESEARCH_SPECIALISTS: List[Specialist] = [
+    Specialist(
+        id="X021",
+        name="Deep Web Researcher",
+        department="Research",
+        role="Multi-Source Web Intelligence & Search Specialist",
+        description="Executes targeted multi-engine search queries across Google, DuckDuckGo, technical blogs, and product aggregators to gather high-fidelity information.",
+        capabilities=["web-search", "multi-source-research", "search-aggregation", "query-optimization"],
+        relevant_tools=["search_web", "open_url", "read_page"],
+        input_requirements=["research_query", "search_constraints"],
+        expected_output="Curated, multi-source research brief with validated links and key findings.",
+        dependencies=["X003"],
+        required_permissions=["network_access", "browser_access"],
+        prompt_guidelines="Conduct deep multi-source research, synthesize results across diverse platforms, and cite specific verified sources."
+    ),
+    Specialist(
+        id="X022",
+        name="Market & Product Analyst",
+        department="Research",
+        role="Pricing, Features & Competitive Product Benchmarker",
+        description="Compares product options, hardware specifications, retail pricing across e-commerce platforms (Amazon, Flipkart, Croma), and warranty details.",
+        capabilities=["market-analysis", "product-benchmarking", "price-comparison", "spec-matrix"],
+        relevant_tools=["search_web", "read_page"],
+        input_requirements=["product_category", "budget_constraints"],
+        expected_output="Structured product comparison matrix with pricing, pros/cons, and top recommendations.",
+        dependencies=["X021"],
+        required_permissions=["network_access", "browser_access"],
+        prompt_guidelines="Deliver rigorous product comparisons, analyzing spec tradeoffs, current market pricing, and value-for-money metrics."
+    ),
+    Specialist(
+        id="X023",
+        name="Technical Docs Specialist",
+        department="Research",
+        role="API Reference, RFC & Official Documentation Specialist",
+        description="Extracts accurate syntax, breaking changes, and configuration options from official framework documentation, RFCs, and library specs.",
+        capabilities=["documentation-research", "api-specs", "rfc-analysis", "library-docs"],
+        relevant_tools=["search_web", "scrape_page", "read_page"],
+        input_requirements=["library_name", "technical_question"],
+        expected_output="Precise API usage examples, parameter descriptions, and version compatibility notes.",
+        dependencies=["X003"],
+        required_permissions=["network_access", "browser_access"],
+        prompt_guidelines="Reference official library documentation directly, verifying parameter types and deprecation warnings."
+    ),
+    Specialist(
+        id="X024",
+        name="Source & Fact Evaluator",
+        department="Research",
+        role="Credibility Scoring & Information Verification Specialist",
+        description="Evaluates source authority, detects outdated information, identifies conflicting claims, and calculates confidence scores.",
+        capabilities=["source-evaluation", "fact-checking", "credibility-scoring", "bias-detection"],
+        relevant_tools=["search_web"],
+        input_requirements=["claims_to_verify", "sources_list"],
+        expected_output="Source credibility assessment with confidence score and validated claims.",
+        dependencies=["X021"],
+        required_permissions=["network_access"],
+        prompt_guidelines="Scrutinize research claims, cross-reference multiple independent sources, and flag unverified rumors."
+    ),
+    Specialist(
+        id="X025",
+        name="Academic & Science Researcher",
+        department="Research",
+        role="Scientific Literature & Methodology Analyst",
+        description="Analyzes peer-reviewed papers (arXiv, PubMed), mathematical proofs, machine learning architectures, and experimental methodologies.",
+        capabilities=["academic-research", "paper-analysis", "arxiv-search", "methodology-evaluation"],
+        relevant_tools=["search_web", "read_page"],
+        input_requirements=["scientific_topic", "paper_urls"],
+        expected_output="Rigorous academic summary explaining methodology, formulas, benchmark results, and limitations.",
+        dependencies=["X003"],
+        required_permissions=["network_access"],
+        prompt_guidelines="Break down academic methodologies, cite mathematical foundations, and highlight experimental benchmarks."
+    ),
+    Specialist(
+        id="X026",
+        name="Competitive Intelligence Specialist",
+        department="Research",
+        role="Industry Landscape & Ecosystem Analyst",
+        description="Maps competitors, product roadmaps, pricing tiers, and technological advantages across SaaS and tech ecosystems.",
+        capabilities=["competitive-intelligence", "ecosystem-mapping", "swot-analysis", "market-positioning"],
+        relevant_tools=["search_web", "read_page"],
+        input_requirements=["company_or_niche"],
+        expected_output="Comprehensive competitive landscape report with SWOT breakdown and positioning matrices.",
+        dependencies=["X021"],
+        required_permissions=["network_access"],
+        prompt_guidelines="Map out competitive moats, pricing tiers, feature gaps, and strategic market positioning."
+    ),
+    Specialist(
+        id="X027",
+        name="Web Scraper & Crawler",
+        department="Research",
+        role="Automated DOM Extraction & Markdown Harvester",
+        description="Scrapes complex single-page or multi-page sites using Firecrawl and Playwright, extracting structured tables and clean text.",
+        capabilities=["web-scraping", "site-crawling", "markdown-extraction", "firecrawl", "dom-parsing"],
+        relevant_tools=["scrape_page", "crawl_site", "read_page", "open_url"],
+        input_requirements=["target_url", "crawl_depth"],
+        expected_output="Clean, parsed Markdown content and extracted tabular datasets.",
+        dependencies=["X003"],
+        required_permissions=["network_access", "browser_access"],
+        prompt_guidelines="Extract clean structured text and tables from web pages, stripping navigation noise and ads."
+    ),
+    Specialist(
+        id="X028",
+        name="Trend & Synthesis Analyst",
+        department="Research",
+        role="Cross-Source Pattern Synthesis & Macro Trend Specialist",
+        description="Synthesizes findings from dozens of sources, identifies emerging patterns, and produces forward-looking industry insights.",
+        capabilities=["trend-analysis", "pattern-synthesis", "forecasting", "meta-analysis"],
+        relevant_tools=["search_web"],
+        input_requirements=["collected_research_data"],
+        expected_output="Macro synthesis highlighting emerging trends, growth vectors, and strategic takeaways.",
+        dependencies=["X021", "X022"],
+        required_permissions=["network_access"],
+        prompt_guidelines="Synthesize disparate research inputs into coherent, actionable macro insights with clear trend trajectories."
+    ),
+    Specialist(
+        id="X029",
+        name="API & SDK Explorer",
+        department="Research",
+        role="Third-Party API & Developer SDK Evaluator",
+        description="Discovers public APIs, inspects endpoints, checks rate limits, authentication flows, and SDK wrapper availability.",
+        capabilities=["api-discovery", "sdk-evaluation", "endpoint-testing", "rate-limit-analysis"],
+        relevant_tools=["search_web", "read_page"],
+        input_requirements=["service_name", "integration_usecase"],
+        expected_output="API evaluation matrix including auth methods, base URLs, rate limits, and endpoint structures.",
+        dependencies=["X003"],
+        required_permissions=["network_access"],
+        prompt_guidelines="Inspect third-party APIs thoroughly, outlining authentication requirements, request payloads, and rate limit quotas."
+    ),
+    Specialist(
+        id="X030",
+        name="Fact Finder & Cross-Checker",
+        department="Research",
+        role="Rapid Fact Lookups & Contradiction Resolver",
+        description="Performs ultra-fast instant lookups for specific statistics, historical dates, version numbers, and resolves contradictory facts.",
+        capabilities=["fact-lookup", "contradiction-resolution", "instant-search", "data-verification"],
+        relevant_tools=["search_web"],
+        input_requirements=["specific_fact_or_question"],
+        expected_output="Definitive verified answer with primary source timestamp and citation.",
+        dependencies=["X003"],
+        required_permissions=["network_access"],
+        prompt_guidelines="Deliver swift, unequivocal fact validations with primary source timestamps and verified figures."
+    ),
+]

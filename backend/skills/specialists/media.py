@@ -1,0 +1,150 @@
+"""
+Media Department Specialists (X061–X070)
+Responsible for voice synthesis (TTS), speech recognition (STT), audio codecs,
+VRM avatar animation choreography, sound design, subtitles, and media streaming.
+"""
+from typing import List
+from .models import Specialist
+
+MEDIA_SPECIALISTS: List[Specialist] = [
+    Specialist(
+        id="X061",
+        name="Voice Synthesis Specialist",
+        department="Media",
+        role="Kokoro TTS, Voice Models & Phoneme Cadence Specialist",
+        description="Configures Kokoro TTS models, tunes voice timbre, optimizes sentence chunking, phonetics, and speech rhythm for natural conversation.",
+        capabilities=["tts", "kokoro-tts", "voice-synthesis", "phonemes", "speech-rhythm", "voice-tuning"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["text_to_speak", "voice_id"],
+        expected_output="Synthesized audio buffers, sentence stream chunks, and voice config settings.",
+        dependencies=["X003"],
+        required_permissions=["audio_playback"],
+        prompt_guidelines="Optimize text for voice synthesis, ensuring natural punctuation pauses and expressive prosody."
+    ),
+    Specialist(
+        id="X062",
+        name="Speech Recognition Specialist",
+        department="Media",
+        role="Whisper STT, VAD & Audio Transcription Engineer",
+        description="Manages Whisper STT models, Voice Activity Detection (VAD) silence thresholds, audio normalization, and accurate transcription.",
+        capabilities=["stt", "whisper", "speech-to-text", "vad", "audio-transcription", "silence-detection"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["raw_audio_input"],
+        expected_output="High-accuracy text transcript with timestamp metadata and confidence scores.",
+        dependencies=["X003"],
+        required_permissions=["audio_recording"],
+        prompt_guidelines="Ensure robust speech recognition with adaptive noise filtering and accurate punctuation reconstruction."
+    ),
+    Specialist(
+        id="X063",
+        name="Audio Processing Engineer",
+        department="Media",
+        role="WAV/MP3 Codecs, Resampling & Buffer Management",
+        description="Processes PCM audio buffers, resamples sample rates (16kHz to 24kHz), normalizes volume levels, and manages audio streaming queues.",
+        capabilities=["audio-codecs", "wav-processing", "resampling", "audio-normalization", "buffer-queues"],
+        relevant_tools=["read_file", "write_file", "run_terminal_command"],
+        input_requirements=["audio_buffer", "target_sample_rate"],
+        expected_output="Clean, resampled WAV/PCM audio buffers ready for playback or network streaming.",
+        dependencies=["X061"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Process audio streams with zero clipping, accurate sample rates, and minimal latency."
+    ),
+    Specialist(
+        id="X064",
+        name="VRM Animation Choreographer",
+        department="Media",
+        role="Avatar Lip-Sync, Eye Blinks & Gesture Choreographer",
+        description="Calculates VRM blendshape weights for visemes (A, I, U, E, O) matching speech audio, coordinates natural idle swaying and eye blinks.",
+        capabilities=["vrm-animation", "lip-sync", "visemes", "blendshapes", "avatar-gestures", "threejs-vrm"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["audio_energy_stream", "viseme_target"],
+        expected_output="Blendshape animation keyframe sequences and expression trigger events.",
+        dependencies=["X045", "X061"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Choreograph realistic VRM avatar expressions and lip-sync movements synchronized perfectly with speech audio."
+    ),
+    Specialist(
+        id="X065",
+        name="Sound Design Specialist",
+        department="Media",
+        role="UI Audio Cues, Sound Effects & Notification Specialist",
+        description="Curates UI audio cues, interaction sound feedback, wake word chime sounds, and ambient background soundscapes.",
+        capabilities=["sound-design", "audio-cues", "sound-effects", "notification-sounds", "ui-audio"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["sound_purpose", "audio_format"],
+        expected_output="Audio cue specifications, frequency synthesizers, and sound effect triggers.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Design subtle, non-intrusive UI sound effects that provide clear tactile feedback."
+    ),
+    Specialist(
+        id="X066",
+        name="Video Storyboard Creator",
+        department="Media",
+        role="Scene-by-Scene Visual Storyboarding & Timing Specialist",
+        description="Creates video production outlines, camera shot descriptions, visual cue timings, and narrated script overlays.",
+        capabilities=["video-storyboarding", "shot-composition", "scene-timing", "production-outlines"],
+        relevant_tools=[],
+        input_requirements=["video_concept", "target_duration"],
+        expected_output="Detailed storyboard table with scene number, camera angle, on-screen action, and audio script.",
+        dependencies=["X040"],
+        required_permissions=[],
+        prompt_guidelines="Structure video storyboards with clear visual compositions and synchronized audio timings."
+    ),
+    Specialist(
+        id="X067",
+        name="Subtitle & Timestamp Specialist",
+        department="Media",
+        role="SRT/VTT Captioning & Word-Level Timestamp Aligning",
+        description="Generates timed subtitles in WebVTT and SubRip (SRT) formats, aligning words with audio phoneme boundaries.",
+        capabilities=["subtitles", "srt-generation", "vtt", "timestamp-alignment", "captioning"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["transcript_text", "audio_timestamps"],
+        expected_output="Formatted .vtt or .srt subtitle files with millisecond accuracy.",
+        dependencies=["X062"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Produce standard subtitle files with accurate line wrapping and millisecond synchronization."
+    ),
+    Specialist(
+        id="X068",
+        name="Podcast & Dialogue Producer",
+        department="Media",
+        role="Multi-Speaker Dialogue, Pacing & Intro/Outro Producer",
+        description="Scripts dynamic two-speaker dialogues, podcast intros/outros, conversational banter, and narrative pacing.",
+        capabilities=["podcast-production", "multi-speaker-dialogue", "conversational-pacing", "show-notes"],
+        relevant_tools=[],
+        input_requirements=["podcast_topic", "host_personas"],
+        expected_output="Two-speaker script with natural turn-taking, sound effect cues, and episode show notes.",
+        dependencies=["X040"],
+        required_permissions=[],
+        prompt_guidelines="Write organic conversational banter with distinct speaker personalities and balanced dialogue turns."
+    ),
+    Specialist(
+        id="X069",
+        name="Media Asset Manager",
+        department="Media",
+        role="Audio/Video Files Indexing, Metadata & Storage Specialist",
+        description="Manages local media asset directories, categorizes recordings, indexes generated images, and executes storage pruning.",
+        capabilities=["media-asset-management", "file-indexing", "metadata-tagging", "storage-cleanup"],
+        relevant_tools=["list_directory", "search_files", "delete_path"],
+        input_requirements=["media_folder_path"],
+        expected_output="Media index catalog with file sizes, formats, timestamps, and cleanup recommendations.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Organize and index media files efficiently while enforcing safe storage quotas."
+    ),
+    Specialist(
+        id="X070",
+        name="Streaming Media Specialist",
+        department="Media",
+        role="WebSocket Chunk Streaming & Low-Latency Audio Specialist",
+        description="Optimizes real-time WebSocket audio frame streaming, manages jitter buffers, and minimizes client-server voice latency.",
+        capabilities=["streaming-media", "websocket-audio", "jitter-buffers", "latency-reduction", "realtime-streaming"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["streaming_spec", "latency_metrics"],
+        expected_output="Low-latency streaming loop configurations and WebSocket chunk handlers.",
+        dependencies=["X013", "X063"],
+        required_permissions=["filesystem_read", "network_access"],
+        prompt_guidelines="Minimize time-to-first-audio-chunk in real-time voice streaming pipelines."
+    ),
+]

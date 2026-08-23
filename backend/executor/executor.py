@@ -8,7 +8,8 @@ matter what goes wrong inside the tool.
 import inspect
 import json
 
-from tools.registry import get_tool
+from skills.manager import skill_manager
+from tools.registry import get_tool as get_static_tool
 from utils.validators import UnsafePathError
 from utils.logger import get_logger
 
@@ -16,10 +17,10 @@ logger = get_logger("executor")
 
 
 async def execute_tool_call(name: str, arguments: dict) -> dict:
-    tool = get_tool(name)
+    tool = skill_manager.get_tool(name) or get_static_tool(name)
 
     if tool is None:
-        return {"success": False, "error": f"Unknown tool '{name}'."}
+        return {"success": False, "error": f"Unknown or disabled tool '{name}'."}
 
     try:
         result = tool(**arguments)
@@ -40,7 +41,20 @@ async def execute_tool_call(name: str, arguments: dict) -> dict:
         return {"success": False, "error": f"'{name}' failed: {e}"}
 
 
-async def run_tool_calls(tool_calls: list) -> list:
+from typing import Callable, Optional, Any
+from core.activity import (
+    get_tool_activity_info,
+    create_activity_event,
+    ActivityEvent,
+    PHASE_ANALYZING,
+)
+
+
+async def run_tool_calls(
+    tool_calls: list,
+    on_event: Optional[Callable[[ActivityEvent], Any]] = None,
+    execution_id: Optional[str] = None,
+) -> list:
     """
     tool_calls: the list model_router returns on message["tool_calls"], each
     shaped like {"id": ..., "type": "function", "function": {"name": ..., "arguments": {...}}}.
@@ -60,6 +74,23 @@ async def run_tool_calls(tool_calls: list) -> list:
         name = fn.get("name")
         arguments = fn.get("arguments") or {}
 
+        # Safe user-facing status event
+        info = get_tool_activity_info(name)
+        if on_event:
+            ev = create_activity_event(
+                event_type="tool.started",
+                message=info["message"],
+                phase=info["phase"],
+                specialist=info["specialist"],
+                execution_id=execution_id,
+            )
+            if inspect.iscoroutinefunction(on_event):
+                await on_event(ev)
+            else:
+                res = on_event(ev)
+                if inspect.isawaitable(res):
+                    await res
+
         # Depending on model/Ollama version, arguments can arrive as a
         # dict already or as a raw JSON string — handle both.
         if isinstance(arguments, str):
@@ -69,6 +100,21 @@ async def run_tool_calls(tool_calls: list) -> list:
                 arguments = {}
 
         result = await execute_tool_call(name, arguments)
+
+        if on_event:
+            ev_done = create_activity_event(
+                event_type="tool.completed",
+                message=f"Finished {info['specialist']} step.",
+                phase=PHASE_ANALYZING,
+                specialist=info["specialist"],
+                execution_id=execution_id,
+            )
+            if inspect.iscoroutinefunction(on_event):
+                await on_event(ev_done)
+            else:
+                res = on_event(ev_done)
+                if inspect.isawaitable(res):
+                    await res
 
         results.append({
             "role": "tool",

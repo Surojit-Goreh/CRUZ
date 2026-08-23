@@ -1,0 +1,150 @@
+"""
+Data Department Specialists (X051–X060)
+Responsible for SQL query design, data analytics, JSON parsing, spreadsheet/CSV handling,
+data visualization, ETL pipelines, vector embeddings, statistical modeling, and text mining.
+"""
+from typing import List
+from .models import Specialist
+
+DATA_SPECIALISTS: List[Specialist] = [
+    Specialist(
+        id="X051",
+        name="Data Analyst",
+        department="Data",
+        role="Exploratory Data Analysis & Statistical Insight Specialist",
+        description="Performs statistical summaries, correlation discovery, aggregate computations, and pattern recognition on diverse datasets.",
+        capabilities=["data-analysis", "exploratory-analysis", "aggregations", "correlations", "data-insights"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["raw_dataset_or_json"],
+        expected_output="Statistical analysis report with key metrics, variance, outliers, and trend findings.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Analyze data objectively, calculating central tendencies, distributions, and actionable correlations."
+    ),
+    Specialist(
+        id="X052",
+        name="SQL Specialist",
+        department="Data",
+        role="Complex Queries, Window Functions & Schema Performance",
+        description="Writes complex SQL queries, JOIN operations, CTEs, window functions, and indexes for SQLite, PostgreSQL, and MySQL.",
+        capabilities=["sql-queries", "joins", "ctes", "window-functions", "indexing", "sqlite-optimization"],
+        relevant_tools=["read_file", "write_file", "run_terminal_command"],
+        input_requirements=["database_schema", "query_requirements"],
+        expected_output="Optimized, injection-safe SQL query scripts and execution plan explanations.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "database_access"],
+        prompt_guidelines="Write highly performant SQL queries using parameterized placeholders and optimal indexing strategies."
+    ),
+    Specialist(
+        id="X053",
+        name="JSON & Data Parser",
+        department="Data",
+        role="JSON, YAML & XML Schema Transformer",
+        description="Validates structured payloads, performs deep dictionary transformations, maps schema versions, and handles malformed data safely.",
+        capabilities=["json-parsing", "yaml", "xml", "schema-validation", "data-transformation", "pydantic-models"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["raw_payload", "target_schema"],
+        expected_output="Clean, validated JSON/YAML structures conforming strictly to the target schema.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Parse and transform structured data with strict schema validation and graceful handling of missing fields."
+    ),
+    Specialist(
+        id="X054",
+        name="CSV & Spreadsheet Specialist",
+        department="Data",
+        role="Tabular Data, CSV Processing & Formulas Specialist",
+        description="Processes CSV/TSV datasets, executes column filtering, computes pivot metrics, and generates spreadsheet calculation formulas.",
+        capabilities=["csv-processing", "spreadsheets", "pivot-tables", "excel-formulas", "tabular-cleanup"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["csv_content_or_file"],
+        expected_output="Processed CSV tables, summaries, and formula specifications.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Handle tabular records with proper delimiter escaping, header alignment, and accurate calculations."
+    ),
+    Specialist(
+        id="X055",
+        name="Data Visualization Specialist",
+        department="Data",
+        role="Markdown Tables, Metrics Dashboards & Charts Specialist",
+        description="Renders clean Markdown comparison tables, ASCII trend charts, metrics summaries, and visualization specifications.",
+        capabilities=["data-visualization", "markdown-tables", "ascii-charts", "dashboard-cards", "metrics-display"],
+        relevant_tools=[],
+        input_requirements=["tabular_data", "metrics_list"],
+        expected_output="Polished Markdown tables, dashboard cards, and formatted numeric summaries.",
+        dependencies=["X051"],
+        required_permissions=[],
+        prompt_guidelines="Present data visually through clean, responsive Markdown tables and intuitive visual summaries."
+    ),
+    Specialist(
+        id="X056",
+        name="ETL Pipeline Designer",
+        department="Data",
+        role="Data Cleansing, Normalization & Ingestion Engineer",
+        description="Designs extract-transform-load (ETL) routines, data sanitization filters, deduplication algorithms, and batch ingestion jobs.",
+        capabilities=["etl-pipelines", "data-cleansing", "normalization", "deduplication", "batch-ingestion"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["source_data_format", "destination_schema"],
+        expected_output="Python ETL scripts and data transformation pipelines.",
+        dependencies=["X011", "X053"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Build resilient data transformation pipelines with robust data validation and error handling."
+    ),
+    Specialist(
+        id="X057",
+        name="Vector & Embeddings Specialist",
+        department="Data",
+        role="Semantic Search, Vector Similarity & Chunking Specialist",
+        description="Manages semantic search embeddings, vector cosine similarity matching, text chunking strategies, and retrieval-augmented generation (RAG).",
+        capabilities=["embeddings", "vector-search", "cosine-similarity", "rag", "text-chunking", "semantic-indexing"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["document_corpus", "query_embedding"],
+        expected_output="Chunked vector indexing schemas, similarity ranking functions, and retrieval pipelines.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Design semantic indexing and chunking strategies that maximize retrieval precision and relevance."
+    ),
+    Specialist(
+        id="X058",
+        name="Statistical Model Specialist",
+        department="Data",
+        role="Probability, Distributions & Hypothesis Testing Specialist",
+        description="Conducts hypothesis tests (t-tests, chi-square), computes confidence intervals, calculates probability distributions, and forecasts bounds.",
+        capabilities=["statistics", "hypothesis-testing", "probability", "distributions", "confidence-intervals"],
+        relevant_tools=[],
+        input_requirements=["sample_data", "test_hypothesis"],
+        expected_output="Statistical test report with p-values, confidence bounds, and conclusion interpretations.",
+        dependencies=["X051"],
+        required_permissions=[],
+        prompt_guidelines="Apply rigorous statistical methods, explaining confidence levels, assumptions, and p-value interpretations."
+    ),
+    Specialist(
+        id="X059",
+        name="NLP & Text Mining Specialist",
+        department="Data",
+        role="Entity Extraction, Sentiment & Regex Mining Specialist",
+        description="Extracts named entities, sentiment scores, keyword frequencies, and complex regex patterns from unstructured text.",
+        capabilities=["nlp", "entity-extraction", "sentiment-analysis", "regex-mining", "keyword-extraction"],
+        relevant_tools=["read_file"],
+        input_requirements=["unstructured_text"],
+        expected_output="Structured JSON of extracted entities, sentiment classification, and regex matches.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Extract structured insights from raw text using precise regular expressions and linguistic heuristics."
+    ),
+    Specialist(
+        id="X060",
+        name="Big Data & Caching Architect",
+        department="Data",
+        role="In-Memory Caching, Pagination & Throughput Specialist",
+        description="Architects LRU caching, memory pagination, batch stream processors, and high-throughput data access layers.",
+        capabilities=["caching-strategies", "lru-cache", "pagination", "throughput-optimization", "data-streaming"],
+        relevant_tools=["read_file", "write_file"],
+        input_requirements=["data_access_patterns", "load_specifications"],
+        expected_output="Caching layer designs, pagination routines, and cache invalidation policies.",
+        dependencies=["X013"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Design high-throughput caching and pagination layers that prevent memory spikes and reduce database load."
+    ),
+]

@@ -7,7 +7,12 @@ import {
   Loader2,
   Sparkles,
   Image as ImageIcon,
+  ChevronDown,
+  ChevronUp,
+  Bot,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./ChatMessage.css";
 import type { Message } from "../../types/chat";
 
@@ -23,9 +28,51 @@ interface ParsedSegment {
   language?: string;
 }
 
-function parseMessageContent(text: string): ParsedSegment[] {
+interface MessageParseOutput {
+  thought?: string;
+  segments: ParsedSegment[];
+}
+
+function extractThoughtAndSanitize(text: string): { thought?: string; cleanText: string } {
+  if (!text) return { cleanText: "" };
+  let clean = text;
+
+  // 1. Extract closed <think>...</think>
+  let thought: string | undefined;
+  const thinkMatch = /<think>([\s\S]*?)<\/think>/i.exec(clean);
+  if (thinkMatch) {
+    thought = thinkMatch[1].trim();
+    clean = clean.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  } else {
+    // Unclosed <think>... during streaming
+    const unclosedThink = /<think>([\s\S]*)$/i.exec(clean);
+    if (unclosedThink) {
+      thought = unclosedThink[1].trim();
+      clean = clean.replace(/<think>[\s\S]*$/gi, "");
+    }
+  }
+
+  // 2. Extract unprompted raw thought narration (e.g. "Okay, so the user wants me to...")
+  if (!thought) {
+    const rawMonologueMatch = /^(?:Okay,?\s+so\s+the\s+user|First,?\s+I\s+need\s+to\s+make\s+sure|Let's\s+figure\s+out\s+what\s+the\s+user)[\s\S]*?(?=\n\n(?:Here|Sure|I've|I'll|Alright|Playing|Now|\*|#|[A-Z])|$)/i.exec(clean);
+    if (rawMonologueMatch && rawMonologueMatch[0].length < clean.length) {
+      thought = rawMonologueMatch[0].trim();
+      clean = clean.slice(rawMonologueMatch[0].length).trim();
+    }
+  }
+
+  // Strip raw tool tags
+  clean = clean.replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, "");
+  clean = clean.replace(/<function=[^>]+>[\s\S]*?<\/function>/gi, "");
+  clean = clean.replace(/<\/?(?:tool_call|function|parameter|think)[^>]*>/gi, "");
+
+  return { thought: thought || undefined, cleanText: clean.trim() };
+}
+
+function parseMessageContent(text: string): MessageParseOutput {
   const segments: ParsedSegment[] = [];
-  if (!text) return segments;
+  const { thought, cleanText } = extractThoughtAndSanitize(text);
+  if (!cleanText) return { thought, segments };
 
   // Regex to match Markdown images with optional newlines/spaces:
   // ![alt text](https://...) or ![alt text](/static/generated_images/...)
@@ -33,9 +80,9 @@ function parseMessageContent(text: string): ParsedSegment[] {
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = imgRegex.exec(text)) !== null) {
+  while ((match = imgRegex.exec(cleanText)) !== null) {
     if (match.index > lastIndex) {
-      const preceding = text.substring(lastIndex, match.index);
+      const preceding = cleanText.substring(lastIndex, match.index);
       pushTextOrRawImageSegments(segments, preceding);
     }
 
@@ -57,12 +104,12 @@ function parseMessageContent(text: string): ParsedSegment[] {
     lastIndex = match.index + match[0].length;
   }
 
-  if (lastIndex < text.length) {
-    const remaining = text.substring(lastIndex);
+  if (lastIndex < cleanText.length) {
+    const remaining = cleanText.substring(lastIndex);
     pushTextOrRawImageSegments(segments, remaining);
   }
 
-  return segments;
+  return { thought, segments };
 }
 
 function pushTextOrRawImageSegments(segments: ParsedSegment[], text: string) {
@@ -107,6 +154,7 @@ function pushTextOrRawImageSegments(segments: ParsedSegment[], text: string) {
 export default function ChatMessage({ message }: Props) {
   const isUser = message.sender === "user";
   const [lightboxImage, setLightboxImage] = useState<{ url: string; alt: string } | null>(null);
+  const [showPlanDetails, setShowPlanDetails] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -124,13 +172,80 @@ export default function ChatMessage({ message }: Props) {
     return null;
   }
 
-  const segments = parseMessageContent(message.text);
+  const { thought, segments } = parseMessageContent(message.text);
+  const hasPlan = !isUser && Boolean(message.plan && message.plan.specialists && message.plan.specialists.length > 0);
 
   return (
     <>
       <div className={`message-row ${isUser ? "user-row" : "assistant-row"}`}>
         <div className="message-wrapper">
           <div className={`message-bubble ${isUser ? "user-bubble" : "assistant-bubble"}`}>
+            {/* ── 100-Specialist Orchestration Plan Banner ── */}
+            {hasPlan && message.plan && (
+              <div className="message-plan-card">
+                <button
+                  type="button"
+                  className="message-plan-toggle-btn"
+                  onClick={() => setShowPlanDetails(!showPlanDetails)}
+                  title="Click to expand/collapse multi-agent orchestration roadmap"
+                >
+                  <div className="message-plan-toggle-left">
+                    <span className="message-plan-icon">
+                      <Bot size={14} />
+                    </span>
+                    <span className="message-plan-label">
+                      Orchestrated by {message.plan.specialists.length} Specialists ({message.plan.departments?.join(", ") || "Command"})
+                    </span>
+                  </div>
+                  <div className="message-plan-toggle-right">
+                    <span className="message-plan-intent-chip">{message.plan.intent?.toUpperCase()}</span>
+                    {showPlanDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </div>
+                </button>
+
+                {showPlanDetails && (
+                  <div className="message-plan-dropdown">
+                    <div className="message-plan-specs-row">
+                      <span className="specs-row-label">Specialists:</span>
+                      {message.plan.specialists.map((sid) => (
+                        <span key={sid} className="plan-spec-badge">
+                          <code>{sid}</code>
+                        </span>
+                      ))}
+                    </div>
+
+                    {message.plan.subtasks && message.plan.subtasks.length > 0 && (
+                      <div className="message-plan-subtasks-list">
+                        {message.plan.subtasks.map((st: any, i: number) => (
+                          <div key={st.id || i} className="plan-subtask-item">
+                            <span className="subtask-step-idx">{i + 1}</span>
+                            <div className="subtask-details">
+                              <span className="subtask-title-text">{st.title || st}</span>
+                              {st.specialist_id && (
+                                <span className="subtask-spec-id">{st.specialist_id}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Internal Chain of Thought ── */}
+            {!isUser && thought && (
+              <details className="message-thought-card">
+                <summary className="message-thought-summary">
+                  <span>💭 View Internal Reasoning ({thought.length > 100 ? `${thought.slice(0, 80)}...` : "Thought Process"})</span>
+                </summary>
+                <div className="message-thought-content">
+                  {thought}
+                </div>
+              </details>
+            )}
+
             {segments.map((seg, idx) => {
               if (seg.type === "image" && seg.url) {
                 return (
@@ -143,9 +258,11 @@ export default function ChatMessage({ message }: Props) {
                 );
               }
               return (
-                <span key={idx} className="message-text-segment">
-                  {seg.content}
-                </span>
+                <div key={idx} className="message-markdown-content">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {seg.content}
+                  </ReactMarkdown>
+                </div>
               );
             })}
           </div>
@@ -154,11 +271,34 @@ export default function ChatMessage({ message }: Props) {
             <span className="message-time">{message.timestamp}</span>
 
             {!isUser && (
-              <span className="message-provider-tag" title={`Model: ${message.model || "Default"}`}>
-                <span className="provider-dot" />
-                Used: {message.provider || "CRUZ AI"}
-                {message.model ? ` · ${message.model}` : ""}
-              </span>
+              <div className="message-models-container">
+                {message.models_used && message.models_used.length > 1 ? (
+                  <div
+                    className="message-multi-model-tag"
+                    title={message.models_used
+                      .map((m) => `${m.provider_name} (${m.model}) [${m.role || "Task"}]`)
+                      .join(" ➔ ")}
+                  >
+                    <span className="provider-dot" />
+                    <span className="multi-title">
+                      Used: {message.models_used.map((m) => m.provider_name).join(" + ")}
+                    </span>
+                    <div className="multi-chips-list">
+                      {message.models_used.map((m, idx) => (
+                        <span key={idx} className="multi-chip">
+                          {m.provider_name} · {m.model ? m.model.split("/").pop() : m.role}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="message-provider-tag" title={`Model: ${message.model || "Default"}`}>
+                    <span className="provider-dot" />
+                    Used: {message.provider || "CRUZ AI"}
+                    {message.model ? ` · ${message.model}` : ""}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>

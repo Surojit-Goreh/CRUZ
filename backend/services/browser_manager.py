@@ -61,6 +61,8 @@ class BrowserManager:
             "--disable-setuid-sandbox",
             "--disable-blink-features=AutomationControlled",
             "--disable-infobars",
+            "--autoplay-policy=no-user-gesture-required",
+            "--disable-features=PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies",
         ]
         ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
@@ -118,6 +120,120 @@ class BrowserManager:
             "status_code": status,
         }
 
+    def _sync_play_youtube(self, query: str) -> Dict[str, Any]:
+        """
+        Instantly searches and plays a video on YouTube in a single reliable step.
+        Auto-dismisses consent dialogs, picks the top video match, navigates to the watch page,
+        and triggers unmuted playback.
+        """
+        page = self._sync_get_active_page()
+        
+        # 1. Clean query string
+        raw_query = query.strip()
+        clean_q = re.sub(r'^(please\s+)?(can you\s+)?(play\s+)', '', raw_query, flags=re.IGNORECASE).strip()
+        clean_q = re.sub(r'\s*(on|in)\s+youtube\s*$', '', clean_q, flags=re.IGNORECASE).strip()
+        clean_q = re.sub(r'\s*(song|video|music|track)\s*$', '', clean_q, flags=re.IGNORECASE).strip()
+        if not clean_q:
+            clean_q = raw_query
+
+        logger.info(f"Playing YouTube media for query: '{clean_q}' (raw: '{raw_query}')")
+
+        # 2. Check if already a direct YouTube URL
+        is_direct_url = bool(re.search(r'https?://(www\.)?(youtube\.com|youtu\.be)/.+', clean_q))
+        
+        if is_direct_url:
+            target_url = clean_q if clean_q.startswith("http") else "https://" + clean_q
+            logger.info(f"Direct YouTube URL detected: {target_url}")
+            page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
+            video_title = page.title()
+        else:
+            search_url = f"https://www.youtube.com/results?search_query={clean_q.replace(' ', '+')}"
+            logger.info(f"Navigating to YouTube search: {search_url}")
+            page.goto(search_url, wait_until="domcontentloaded", timeout=30000)
+
+            # Auto-dismiss cookie / consent banners if present
+            try:
+                page.wait_for_timeout(600)
+                consent_selectors = [
+                    "button[aria-label*='Accept']",
+                    "button[aria-label*='Agree']",
+                    "button:has-text('Accept all')",
+                    "button:has-text('I agree')",
+                    "button:has-text('Accept')",
+                    "button:has-text('Reject all')",
+                    "#dismiss-button",
+                    "button[aria-label='No thanks']",
+                ]
+                for sel in consent_selectors:
+                    if page.locator(sel).count() > 0:
+                        page.locator(sel).first.click(timeout=1000)
+                        logger.info(f"Dismissed YouTube consent/popup dialog ({sel})")
+                        break
+            except Exception:
+                pass
+
+            # Wait for search results to render
+            try:
+                page.wait_for_selector("ytd-video-renderer, ytd-rich-item-renderer, a#video-title", timeout=6000)
+            except Exception:
+                pass
+
+            video_title = ""
+            target_url = None
+
+            # Find the first valid video item with href containing watch?v=
+            links = page.locator("a#video-title, ytd-video-renderer a#thumbnail")
+            for i in range(min(links.count(), 8)):
+                link = links.nth(i)
+                href = link.get_attribute("href") or ""
+                if "/watch?v=" in href or "watch" in href:
+                    video_title = link.get_attribute("title") or link.inner_text().strip()
+                    if href.startswith("/"):
+                        target_url = f"https://www.youtube.com{href}"
+                    elif href.startswith("http"):
+                        target_url = href
+                    break
+
+            if target_url:
+                logger.info(f"Navigating directly to top YouTube video: {target_url} ('{video_title}')")
+                page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
+            elif links.count() > 0:
+                video_title = links.first.get_attribute("title") or links.first.inner_text().strip()
+                logger.info(f"Clicking first YouTube video result: '{video_title}'")
+                links.first.click(timeout=5000)
+
+        # 3. Ensure video starts playing and is unmuted on watch page
+        try:
+            page.wait_for_load_state("domcontentloaded", timeout=5000)
+            page.wait_for_timeout(800)
+            page.evaluate("""() => {
+                // Dismiss any popups or ads
+                const dismissBtn = document.querySelector('#dismiss-button, button[aria-label="No thanks"], button[aria-label="Skip"], .ytp-ad-skip-button');
+                if (dismissBtn) dismissBtn.click();
+
+                // Unmute and start HTML5 video playback
+                const video = document.querySelector('video');
+                if (video) {
+                    video.muted = false;
+                    const p = video.play();
+                    if (p !== undefined) {
+                        p.catch(e => console.log('Autoplay error:', e));
+                    }
+                }
+            }""")
+        except Exception as e:
+            logger.debug(f"Video unpause attempt: {e}")
+
+        final_title = video_title or page.title().replace(" - YouTube", "").strip() or clean_q
+        return {
+            "success": True,
+            "action": "play_youtube",
+            "query": raw_query,
+            "video_title": final_title,
+            "url": page.url,
+            "message": f"Now playing '{final_title}' on YouTube.",
+        }
+
     def _sync_search_web(self, query: str, engine: Optional[str] = None) -> Dict[str, Any]:
         # 1. If query contains a URL, redirect to open_url directly
         url_match = re.search(r'https?://[^\s\]\)\"]+', query)
@@ -135,6 +251,9 @@ class BrowserManager:
         q_lower = clean_query.lower()
 
         if "youtube" in engine_name or "youtube" in q_lower:
+            # If user wants to play a video/song, route straight to play_youtube
+            if any(k in q_lower for k in ("play", "song", "music", "video", "track", "listen")):
+                return self._sync_play_youtube(query)
             search_q = q_lower.replace("youtube", "").replace("search", "").replace("for", "").strip() or clean_query
             search_url = f"https://www.youtube.com/results?search_query={search_q.replace(' ', '+')}"
         elif "duckduckgo" in engine_name:
@@ -157,6 +276,7 @@ class BrowserManager:
             "title": page.title(),
             "search_results": content_res.get("content", ""),
         }
+
 
     def _sync_read_page(self, max_chars: int = 8000) -> Dict[str, Any]:
         page = self._sync_get_active_page()
@@ -355,6 +475,10 @@ class BrowserManager:
     async def take_screenshot(self, filename: Optional[str] = None) -> Dict[str, Any]:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self._executor, self._sync_take_screenshot, filename)
+
+    async def play_youtube(self, query: str) -> Dict[str, Any]:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(self._executor, self._sync_play_youtube, query)
 
     async def get_state(self) -> Dict[str, Any]:
         loop = asyncio.get_running_loop()

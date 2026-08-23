@@ -2,11 +2,9 @@ import re
 import base64
 import io
 import threading
-import torch
 import numpy as np
 import scipy.io.wavfile as wavfile
 import httpx
-from kokoro import KPipeline
 
 from config import (
     GEMINI_API_KEY,
@@ -18,12 +16,6 @@ from config import (
 from utils.logger import get_logger
 
 logger = get_logger("voice.tts")
-
-# Optimize PyTorch CPU Threading for AMD Ryzen CPU
-try:
-    torch.set_num_threads(4)
-except Exception:
-    pass
 
 
 def _clean_text_for_speech(text: str) -> str:
@@ -107,11 +99,16 @@ class TextToSpeech:
             with self._init_lock:
                 if self.pipeline is None:
                     try:
-                        print(f"Loading local Kokoro TTS (voice={self.voice})...")
+                        import torch
+                        from kokoro import KPipeline
+                        try:
+                            torch.set_num_threads(4)
+                        except Exception:
+                            pass
                         p = KPipeline(lang_code=self.lang_code)
                         list(p("Ready.", voice=self.voice))
                         self.pipeline = p
-                        print("Local Kokoro loaded and pre-warmed.")
+                        logger.info("Local Kokoro TTS loaded and pre-warmed.")
                     except Exception as e:
                         logger.error(f"Kokoro initialization error: {e}")
 

@@ -3,6 +3,7 @@ import {
   Paperclip,
   Mic,
   SendHorizontal,
+  Square,
   Sparkles,
   Hammer,
   Brain,
@@ -28,6 +29,8 @@ interface Props {
   onAgentModeChange?: (mode: string) => void;
   selectedModel?: string;
   onSelectedModelChange?: (model: string) => void;
+  isGenerating?: boolean;
+  onStopGeneration?: () => void;
 }
 
 const VOICE_LABELS: Record<VoiceState, string> = {
@@ -196,6 +199,8 @@ export default function ChatInput({
   onAgentModeChange,
   selectedModel: controlledSelectedModel,
   onSelectedModelChange,
+  isGenerating,
+  onStopGeneration,
 }: Props) {
   const [text, setText] = useState("");
   const [internalAgentMode, setInternalAgentMode] = useState<string>("auto");
@@ -280,18 +285,17 @@ export default function ChatInput({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value);
-
-    const area = textareaRef.current;
-    if (!area) return;
-
-    area.style.height = "26px";
-    area.style.height = area.scrollHeight + "px";
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape" && isGenerating && onStopGeneration) {
+      e.preventDefault();
+      onStopGeneration();
+      return;
+    }
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSend();
     }
@@ -311,191 +315,190 @@ export default function ChatInput({
   });
 
   return (
-    <div className="chat-input-wrapper">
-      {/* ── Top Bar Controls: Agent Mode & Model Selector ── */}
-      <div className="chat-input-top-bar">
-        {/* ── 1. Agent Mode Selector ── */}
-        <div className="agent-selector-wrapper" ref={agentDropdownRef}>
-          <button
-            type="button"
-            className="agent-pill-btn"
-            onClick={() => {
-              setAgentDropdownOpen((prev) => !prev);
-              setModelDropdownOpen(false);
+    <div className="controlbar glass">
+      {/* ── 1. Agent Mode Selector Pill ── */}
+      <div className="agent-selector-wrapper" ref={agentDropdownRef}>
+        <button
+          type="button"
+          className="pill"
+          onClick={() => {
+            setAgentDropdownOpen((prev) => !prev);
+            setModelDropdownOpen(false);
+          }}
+          title={`Active Agent: ${currentAgent.name}`}
+        >
+          <span
+            className="sw"
+            style={{
+              background: `linear-gradient(135deg, ${currentAgent.color}, var(--accent-3))`,
             }}
-            title={`Active Agent: ${currentAgent.name}`}
-            style={{ "--agent-accent": currentAgent.color } as React.CSSProperties}
-          >
-            <span className="agent-pill-icon">{currentAgent.icon}</span>
-            <span className="agent-pill-name">{currentAgent.name}</span>
-            <ChevronDown
-              size={12}
-              className={`agent-chevron ${agentDropdownOpen ? "open" : ""}`}
-            />
-          </button>
-
-          {agentDropdownOpen && (
-            <div className="agent-dropdown-menu">
-              <div className="agent-dropdown-header">
-                <span>Select Agent Mode</span>
-                <span className="agent-header-hint">Auto-dispatches best free model</span>
-              </div>
-              <div className="agent-dropdown-list">
-                {AGENT_OPTIONS.map((opt) => {
-                  const isSelected = opt.id === activeAgentMode;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      className={`agent-dropdown-item ${isSelected ? "selected" : ""}`}
-                      onClick={() => {
-                        setEffectiveAgentMode(opt.id);
-                        setAgentDropdownOpen(false);
-                      }}
-                    >
-                      <div
-                        className="agent-item-icon"
-                        style={{ color: opt.color, backgroundColor: `${opt.color}1a` }}
-                      >
-                        {opt.icon}
-                      </div>
-                      <div className="agent-item-info">
-                        <div className="agent-item-top">
-                          <span className="agent-item-name">{opt.name}</span>
-                          <span
-                            className="agent-item-badge"
-                            style={{ color: opt.color, borderColor: `${opt.color}40` }}
-                          >
-                            {opt.badge}
-                          </span>
-                        </div>
-                        <span className="agent-item-desc">{opt.description}</span>
-                      </div>
-                      {isSelected && (
-                        <div className="agent-item-check" style={{ color: opt.color }}>
-                          <Check size={14} />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ── 2. Free Model Selector Dropdown ── */}
-        <div className="model-selector-wrapper" ref={modelDropdownRef}>
-          <button
-            type="button"
-            className="model-pill-btn"
-            onClick={() => {
-              setModelDropdownOpen((prev) => !prev);
-              setAgentDropdownOpen(false);
-            }}
-            title={`Selected Model: ${currentModelItem.provider_name} • ${currentModelItem.model_name}`}
-          >
-            <Cpu size={13} className="model-pill-icon" />
-            <span className="model-pill-name">
-              {currentModelItem.model_id === "auto"
-                ? "Auto (Dynamic)"
-                : `${currentModelItem.provider_name.split(" ")[0]}: ${currentModelItem.raw_model.split(":")[0].replace("meta/", "").replace("@cf/", "").substring(0, 16)}`}
-            </span>
-            <ChevronDown
-              size={12}
-              className={`agent-chevron ${modelDropdownOpen ? "open" : ""}`}
-            />
-          </button>
-
-          {modelDropdownOpen && (
-            <div className="model-dropdown-menu">
-              <div className="model-dropdown-header">
-                <div className="model-header-title">
-                  <span>Free Models & Providers</span>
-                  <span className="model-header-count">{filteredModels.length} models</span>
-                </div>
-                <div className="model-search-box">
-                  <Search size={13} />
-                  <input
-                    type="text"
-                    placeholder="Search free models or providers..."
-                    value={modelSearchQuery}
-                    onChange={(e) => setModelSearchQuery(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              <div className="model-dropdown-list">
-                {filteredModels.map((m) => {
-                  const isSelected =
-                    m.model_id === activeSelectedModel ||
-                    (activeSelectedModel === "auto" && m.model_id === "auto");
-
-                  return (
-                    <button
-                      key={m.model_id}
-                      type="button"
-                      className={`model-dropdown-item ${isSelected ? "selected" : ""} ${!m.is_connected ? "unavailable" : ""}`}
-                      onClick={() => {
-                        if (!m.is_connected) return;
-                        setEffectiveSelectedModel(m.model_id);
-                        setModelDropdownOpen(false);
-                      }}
-                    >
-                      <div className="model-item-left">
-                        <span
-                          className={`model-conn-dot ${m.is_connected ? "online" : "offline"}`}
-                          title={m.is_connected ? "Connected & Ready" : "Unconnected"}
-                        />
-                        <div className="model-item-details">
-                          <div className="model-item-line1">
-                            <span className="model-item-title">{m.model_name}</span>
-                            <span className={`model-badge ${m.badge.toLowerCase()}`}>{m.badge}</span>
-                          </div>
-                          <span className="model-item-provider">{m.provider_name}</span>
-                        </div>
-                      </div>
-
-                      {isSelected && (
-                        <div className="model-item-check">
-                          <Check size={14} />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-
-                {filteredModels.length === 0 && (
-                  <div className="model-dropdown-empty">
-                    <span>No models matching "{modelSearchQuery}"</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Main Spacious Input Bar ── */}
-      <div className="chat-input-container">
-        <button className="input-icon" type="button" title="Attach file">
-          <Paperclip size={20} />
+          />
+          <span>{currentAgent.name}</span>
+          <ChevronDown
+            size={13}
+            className={`agent-chevron ${agentDropdownOpen ? "open" : ""}`}
+          />
         </button>
 
-        <textarea
-          ref={textareaRef}
-          rows={1}
+        {agentDropdownOpen && (
+          <div className="agent-dropdown-menu">
+            <div className="agent-dropdown-header">
+              <span>Select Agent Mode</span>
+              <span className="agent-header-hint">Auto-dispatches best free model</span>
+            </div>
+            <div className="agent-dropdown-list">
+              {AGENT_OPTIONS.map((opt) => {
+                const isSelected = opt.id === activeAgentMode;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`agent-dropdown-item ${isSelected ? "selected" : ""}`}
+                    onClick={() => {
+                      setEffectiveAgentMode(opt.id);
+                      setAgentDropdownOpen(false);
+                    }}
+                  >
+                    <div
+                      className="agent-item-icon"
+                      style={{ color: opt.color, backgroundColor: `${opt.color}1a` }}
+                    >
+                      {opt.icon}
+                    </div>
+                    <div className="agent-item-info">
+                      <div className="agent-item-top">
+                        <span className="agent-item-name">{opt.name}</span>
+                        <span
+                          className="agent-item-badge"
+                          style={{ color: opt.color, borderColor: `${opt.color}40` }}
+                        >
+                          {opt.badge}
+                        </span>
+                      </div>
+                      <span className="agent-item-desc">{opt.description}</span>
+                    </div>
+                    {isSelected && (
+                      <div className="agent-item-check" style={{ color: opt.color }}>
+                        <Check size={14} />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 2. Free Model Selector Pill ── */}
+      <div className="model-selector-wrapper" ref={modelDropdownRef}>
+        <button
+          type="button"
+          className="pill"
+          onClick={() => {
+            setModelDropdownOpen((prev) => !prev);
+            setAgentDropdownOpen(false);
+          }}
+          title={`Selected Model: ${currentModelItem.provider_name} • ${currentModelItem.model_name}`}
+        >
+          <Cpu size={13} />
+          <span>
+            {currentModelItem.model_id === "auto"
+              ? "Auto (dynamic)"
+              : `${currentModelItem.provider_name.split(" ")[0]}: ${currentModelItem.raw_model.split(":")[0].replace("meta/", "").replace("@cf/", "").substring(0, 14)}`}
+          </span>
+          <ChevronDown
+            size={13}
+            className={`agent-chevron ${modelDropdownOpen ? "open" : ""}`}
+          />
+        </button>
+
+        {modelDropdownOpen && (
+          <div className="model-dropdown-menu">
+            <div className="model-dropdown-header">
+              <div className="model-header-title">
+                <span>Free Models & Providers</span>
+                <span className="model-header-count">{filteredModels.length} models</span>
+              </div>
+              <div className="model-search-box">
+                <Search size={13} />
+                <input
+                  type="text"
+                  placeholder="Search free models or providers..."
+                  value={modelSearchQuery}
+                  onChange={(e) => setModelSearchQuery(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="model-dropdown-list">
+              {filteredModels.map((m) => {
+                const isSelected =
+                  m.model_id === activeSelectedModel ||
+                  (activeSelectedModel === "auto" && m.model_id === "auto");
+
+                return (
+                  <button
+                    key={m.model_id}
+                    type="button"
+                    className={`model-dropdown-item ${isSelected ? "selected" : ""} ${!m.is_connected ? "unavailable" : ""}`}
+                    onClick={() => {
+                      if (!m.is_connected) return;
+                      setEffectiveSelectedModel(m.model_id);
+                      setModelDropdownOpen(false);
+                    }}
+                  >
+                    <div className="model-item-left">
+                      <span
+                        className={`model-conn-dot ${m.is_connected ? "online" : "offline"}`}
+                        title={m.is_connected ? "Connected & Ready" : "Unconnected"}
+                      />
+                      <div className="model-item-details">
+                        <div className="model-item-line1">
+                          <span className="model-item-title">{m.model_name}</span>
+                          <span className={`model-badge ${m.badge.toLowerCase()}`}>{m.badge}</span>
+                        </div>
+                        <span className="model-item-provider">{m.provider_name}</span>
+                      </div>
+                    </div>
+
+                    {isSelected && (
+                      <div className="model-item-check">
+                        <Check size={14} />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+
+              {filteredModels.length === 0 && (
+                <div className="model-dropdown-empty">
+                  <span>No models matching "{modelSearchQuery}"</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── 3. Main Input Capsule ── */}
+      <div className="input-capsule">
+        <input
+          type="text"
           value={text}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder={`Ask Cruz anything (${currentAgent.name})...`}
-          className="chat-textarea"
+          placeholder="Ask Cruz anything..."
         />
 
+        <button className="capsule-btn" type="button" title="Attach file">
+          <Paperclip size={16} />
+        </button>
+
         <button
-          className={`input-icon ${isBusy ? "mic-active" : ""}`}
+          className={`capsule-btn ${isBusy ? "mic-active" : ""}`}
           type="button"
           onClick={onStartVoiceTurn}
           disabled={!connected || isBusy}
@@ -503,21 +506,32 @@ export default function ChatInput({
             !connected ? "Voice server not connected" : VOICE_LABELS[voiceState]
           }
         >
-          <Mic size={20} />
+          <Mic size={16} />
         </button>
 
-        <button
-          className={`send-btn ${text.trim() ? "active" : ""}`}
-          onClick={handleSend}
-          disabled={!text.trim()}
-          type="button"
-          title="Send message"
-        >
-          <SendHorizontal size={18} />
-        </button>
+        {isGenerating && onStopGeneration ? (
+          <button
+            className="capsule-btn stop"
+            onClick={onStopGeneration}
+            type="button"
+            title="Stop generation (Esc)"
+            aria-label="Stop generation"
+          >
+            <Square size={13} fill="currentColor" />
+          </button>
+        ) : (
+          <button
+            className={`capsule-btn send ${text.trim() ? "active" : ""}`}
+            onClick={handleSend}
+            disabled={!text.trim()}
+            type="button"
+            title="Send message"
+            aria-label="Send message"
+          >
+            <SendHorizontal size={15} />
+          </button>
+        )}
       </div>
-
-      {isBusy && <div className="voice-status">{VOICE_LABELS[voiceState]}</div>}
     </div>
   );
 }

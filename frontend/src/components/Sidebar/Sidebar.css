@@ -1,408 +1,290 @@
 /* ── Sidebar Shell ── */
 .sidebar {
-  width: 260px;
-  height: 100vh;
-
-  background: var(--surface-1);
-  border-right: 1px solid var(--border-subtle);
-
   display: flex;
   flex-direction: column;
-
-  padding: 24px 20px;
-  box-sizing: border-box;
-
-  flex-shrink: 0;
+  padding: 18px 16px 20px 16px;
+  gap: 12px;
+  height: 100%;
   overflow: hidden;
   white-space: nowrap;
-
+  box-sizing: border-box;
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
               padding 0.3s cubic-bezier(0.16, 1, 0.3, 1),
               opacity 0.25s ease;
 }
 
 .sidebar.collapsed {
-  width: 0px;
-  padding: 24px 0px;
-  border-right: none;
+  width: 0 !important;
+  padding: 18px 0 !important;
   opacity: 0;
   pointer-events: none;
 }
 
-/* ── Logo & Toggle Button ── */
-.sidebar-logo {
+/* ── Brand Header ── */
+.brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 28px;
+  padding: 4px 4px 10px 4px;
 }
 
-.logo-text {
-  flex: 1;
-}
-
-.sidebar-toggle-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.sidebar-toggle-btn:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
-}
-
-.logo-orb {
+.brand-orb {
   width: 42px;
   height: 42px;
   border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  box-shadow: 0 0 22px rgba(166, 133, 250, 0.55), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
 
-  background: radial-gradient(
-    circle at 35% 35%,
-    #ffffff 0%,
-    #c4b5fd 20%,
-    #7c5cfc 55%,
-    #4c1d95 100%
-  );
-  box-shadow:
-    0 0 20px rgba(124, 92, 252, 0.4),
-    0 0 50px rgba(124, 92, 252, 0.2);
+.brand-text {
+  flex: 1;
+}
 
+.brand-text h1 {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--text-hi);
+}
+
+.brand-text p {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-mid);
+}
+
+.sidebar-toggle-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-mid);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  flex-shrink: 0;
-
-  animation: orbBreathe 3s ease-in-out infinite;
+  transition: background 0.15s ease;
 }
 
-.orb-inner {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  filter: blur(2px);
-}
-
-@keyframes orbBreathe {
-  0%, 100% {
-    box-shadow:
-      0 0 20px rgba(124, 92, 252, 0.4),
-      0 0 50px rgba(124, 92, 252, 0.2);
-  }
-  50% {
-    box-shadow:
-      0 0 28px rgba(124, 92, 252, 0.5),
-      0 0 70px rgba(124, 92, 252, 0.25);
-  }
-}
-
-.sidebar-logo h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  color: var(--text-primary);
-}
-
-.sidebar-logo p {
-  margin-top: 2px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 400;
+.sidebar-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-hi);
 }
 
 /* ── New Chat Button ── */
 .new-chat {
-  height: 44px;
-
-  border: none;
-  border-radius: var(--radius-md);
-
-  background: var(--accent-gradient);
-  color: white;
-
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-
+  padding: 12px;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, rgba(166, 133, 250, 0.85), rgba(244, 114, 182, 0.75));
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 24px rgba(166, 133, 250, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: #160b26;
+  font-weight: 700;
+  font-size: 13.5px;
   cursor: pointer;
-  transition: var(--transition-normal);
-
-  box-shadow: var(--shadow-glow);
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .new-chat:hover {
   transform: translateY(-1px);
-  box-shadow:
-    var(--shadow-glow),
-    0 4px 16px rgba(124, 92, 252, 0.3);
+  box-shadow: 0 12px 28px rgba(166, 133, 250, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
-.new-chat:active {
-  transform: translateY(0);
-}
-
-/* ── Menu ── */
-.sidebar-menu {
-  margin-top: 24px;
+/* ── Navigation Items ── */
+.nav {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-top: 4px;
 }
 
-.menu-item {
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-
+.nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  font-size: 13.5px;
+  color: var(--text-mid);
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.menu-item:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-hi);
 }
 
-.menu-item.active {
-  background: var(--accent-glow);
-  color: var(--accent-primary);
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(166, 133, 250, 0.28), rgba(244, 114, 182, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--text-hi);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-/* ── Sidebar Voice Assistant Card ── */
-.sidebar-voice-card {
-  margin-top: auto;
-  margin-bottom: 12px;
-  width: 100%;
-}
-
-.sidebar-voice-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(124, 92, 252, 0.2);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-  backdrop-filter: blur(12px);
-}
-
-.sidebar-voice-btn:hover:not(:disabled) {
-  background: rgba(124, 92, 252, 0.12);
-  border-color: rgba(124, 92, 252, 0.45);
-  box-shadow: 0 0 16px rgba(124, 92, 252, 0.2);
-  transform: translateY(-1px);
-}
-
-.sidebar-voice-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.voice-btn-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
+.nav-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
   flex-shrink: 0;
 }
 
-.sidebar-voice-dot {
-  width: 8px;
-  height: 8px;
+.nav-item.active .nav-dot {
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  opacity: 1;
+}
+
+.nav-icon {
+  opacity: 0.75;
+}
+
+.nav-item.active .nav-icon {
+  opacity: 1;
+  color: var(--accent-1);
+}
+
+/* ── Bottom Section (Moved higher up with comfortable breathing room) ── */
+.sidebar-bottom-group {
+  margin-top: auto;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ── Voice Assistant Status Card ── */
+.mic-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.mic-card:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.mic-pulse {
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: #64748b;
-  transition: all 0.2s ease;
+  background: var(--accent-3);
+  box-shadow: 0 0 0 0 rgba(94, 234, 212, 0.6);
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
 }
 
-.sidebar-voice-dot.wake-active,
-.sidebar-voice-dot.idle.wake-active {
-  background: #10b981;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
-  animation: voicePulseDot 2s infinite ease-in-out;
-}
-
-.sidebar-voice-dot.listening {
+.mic-pulse.listening {
   background: #a855f7;
   box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
-  animation: voiceListeningPulse 0.8s infinite alternate;
+  animation: pulseListen 0.8s infinite alternate;
 }
 
-.sidebar-voice-dot.thinking {
-  background: #f59e0b;
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+.mic-pulse.speaking {
+  background: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+  animation: pulse 1.2s infinite;
 }
 
-@keyframes voicePulseDot {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.3); opacity: 1; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(94, 234, 212, 0.55); }
+  70% { box-shadow: 0 0 0 8px rgba(94, 234, 212, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(94, 234, 212, 0); }
 }
 
-@keyframes voiceListeningPulse {
+@keyframes pulseListen {
   0% { transform: scale(0.9); opacity: 0.6; }
   100% { transform: scale(1.4); opacity: 1; }
 }
 
-/* Animated Sound Wave Bars when speaking */
-.sidebar-voice-waves {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 14px;
+.mic-card-text p {
+  margin: 0;
 }
 
-.sidebar-voice-waves .wave-bar {
-  width: 3px;
-  background: #38bdf8;
-  border-radius: 2px;
-  animation: sidebarWave 0.6s ease-in-out infinite alternate;
+.mic-card-text .t1 {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-hi);
 }
 
-.sidebar-voice-waves .bar-1 { height: 6px; animation-delay: 0.1s; }
-.sidebar-voice-waves .bar-2 { height: 12px; animation-delay: 0.25s; }
-.sidebar-voice-waves .bar-3 { height: 8px; animation-delay: 0.4s; }
-
-@keyframes sidebarWave {
-  0% { height: 3px; }
-  100% { height: 14px; }
-}
-
-.sidebar-voice-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-  min-width: 0;
-}
-
-.voice-status-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #f1f5f9;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.voice-status-sub {
+.mic-card-text .t2 {
   font-size: 10.5px;
-  color: var(--text-muted, #94a3b8);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-voice-mic-icon {
-  color: var(--text-muted, #94a3b8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: color 0.2s ease;
-}
-
-.sidebar-voice-btn:hover .sidebar-voice-mic-icon {
-  color: #a855f7;
-}
-
-/* Collapsed sidebar voice trigger */
-.sidebar.collapsed .sidebar-voice-info,
-.sidebar.collapsed .sidebar-voice-mic-icon {
-  display: none;
-}
-
-.sidebar.collapsed .sidebar-voice-card {
-  display: flex;
-  justify-content: center;
-}
-
-.sidebar.collapsed .sidebar-voice-btn {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  justify-content: center;
-  border-radius: 50%;
+  color: var(--text-low);
 }
 
 /* ── User Profile ── */
-.sidebar-user {
+.profile {
   display: flex;
   align-items: center;
-  gap: 12px;
-
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 16px;
+  gap: 10px;
+  padding: 9px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.avatar {
-  width: 36px;
-  height: 36px;
+.profile:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.profile-avatar {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-
-  background: linear-gradient(135deg, #f97316, #fb923c);
-
+  background: linear-gradient(135deg, #f7b955, #f4736f);
   display: flex;
-  justify-content: center;
   align-items: center;
-
-  font-weight: 700;
-  font-size: 13px;
-  color: white;
-
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #3a1200;
   flex-shrink: 0;
 }
 
-.user-info {
+.profile-text {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   min-width: 0;
 }
 
-.user-info strong {
-  color: var(--text-primary);
+.profile-text p {
+  margin: 0;
+}
+
+.profile-text .t1 {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--text-hi);
 }
 
-.user-info span {
-  color: var(--text-muted);
-  font-size: 11px;
+.profile-text .t2 {
+  font-size: 10.5px;
+  color: var(--text-low);
 }
 
-.sidebar-user svg {
-  color: var(--text-muted);
-  flex-shrink: 0;
+.profile .chev {
+  margin-left: auto;
+  color: var(--text-low);
+  display: flex;
+  align-items: center;
 }

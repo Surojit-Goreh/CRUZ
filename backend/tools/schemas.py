@@ -172,6 +172,20 @@ BROWSER_TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
+            "name": "play_youtube",
+            "description": "Search and instantly play a video, song, music, or audio on YouTube in the browser. Opens YouTube, finds the best match, and starts playback directly in a single step without getting stuck on search results.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Song name, artist, music track, or video title to play on YouTube (e.g. 'Shape of You by Ed Sheeran' or 'lofi hip hop beats')."},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "open_url",
             "description": "Open a website URL in CRUZ's browser.",
             "parameters": {
@@ -198,14 +212,16 @@ BROWSER_TOOL_SCHEMAS = [
             },
         },
     },
+
     {
         "type": "function",
         "function": {
             "name": "read_page",
-            "description": "Extract readable text content from the current active browser page.",
+            "description": "Extract readable text content from a website URL or the current active browser page.",
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "url": {"type": "string", "description": "Optional website URL to open and read. If omitted, reads the current active page."},
                     "max_chars": {"type": "integer", "description": "Maximum characters to return. Defaults to 8000."},
                 },
             },
@@ -315,6 +331,8 @@ SYSTEM_DESKTOP_TOOL_SCHEMAS = [
         },
     },
 ]
+
+
 
 RESEARCH_TOOL_SCHEMAS = [
     {

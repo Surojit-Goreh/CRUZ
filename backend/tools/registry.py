@@ -29,6 +29,7 @@ TOOL_REGISTRY = {
 
     # Browser tools
     "open_url": browser.open_url,
+    "play_youtube": browser.play_youtube,
     "search_web": browser.search_web,
     "read_page": browser.read_page,
     "click_element": browser.click_element,

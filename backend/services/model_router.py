@@ -1,6 +1,8 @@
 import asyncio
 import json
+import re
 import time
+import uuid
 import httpx
 from contextvars import ContextVar
 from typing import List, Dict, Any, Optional, Tuple
@@ -77,23 +79,51 @@ class ModelRouter:
 
     def __init__(self):
         self.circuit_breaker = CircuitBreaker()
-        self._provider_info: ContextVar[Dict[str, str]] = ContextVar(
-            "provider_info",
-            default={
+        self._last_info: Dict[str, Any] = {
             "provider_id": "ollama",
             "provider_name": "Ollama",
             "model": OLLAMA_MODEL or "qwen2.5:3b",
-            },
-        )
+            "models_used": [],
+        }
+        self._models_used: List[Dict[str, str]] = []
+
+    def reset_request_models(self):
+        """Resets recorded models for a new user request cycle."""
+        self._models_used = []
+
+    def record_used_model(self, provider_name: str, model: str, role: str = "LLM Generation", provider_id: Optional[str] = None):
+        """Records a model/engine that contributed to completing the user's request."""
+        p_id = provider_id or provider_name.lower().replace(" ", "_")
+        entry = {
+            "provider_name": provider_name,
+            "model": model,
+            "role": role,
+            "provider_id": p_id,
+        }
+        # Avoid duplicate consecutive entries
+        if not any(m["provider_name"] == provider_name and m["model"] == model and m.get("role") == role for m in self._models_used):
+            self._models_used.append(entry)
+
+        self._last_info = {
+            "provider_id": p_id,
+            "provider_name": provider_name,
+            "model": model,
+            "models_used": list(self._models_used),
+        }
 
     @property
-    def last_provider_info(self) -> Dict[str, str]:
-        """Provider data scoped to the current async request/task."""
-        return self._provider_info.get()
+    def last_provider_info(self) -> Dict[str, Any]:
+        """Provider and multi-model pipeline attribution metadata."""
+        info = dict(self._last_info)
+        info["models_used"] = list(self._models_used)
+        return info
 
     @last_provider_info.setter
-    def last_provider_info(self, value: Dict[str, str]) -> None:
-        self._provider_info.set(value)
+    def last_provider_info(self, value: Dict[str, Any]) -> None:
+        p_name = value.get("provider_name", "AI")
+        model = value.get("model", "")
+        p_id = value.get("provider_id", "")
+        self.record_used_model(p_name, model, role="LLM Generation", provider_id=p_id)
 
     def get_candidate_providers(self, task_category: str, selected_model: Optional[str] = None) -> List[Dict[str, Any]]:
         """
@@ -114,15 +144,20 @@ class ModelRouter:
                 raw_config = connected[p_id]
                 config = dict(raw_config)
 
-                # Dynamic task-based free model resolution
+                # Dynamic task-based model resolution for active Agent Mode
                 if p_id in PROVIDERS_CATALOG:
                     info = PROVIDERS_CATALOG[p_id]
                     saved_model = config.get("model") or ""
 
-                    # If model is set to 'auto', blank, or default catalog model, pick task-specialized model
-                    if not saved_model or saved_model.lower() == "auto" or saved_model == info.default_model:
+                    # When selected_model is auto (or not set), resolve best specialized model for this agent mode / task
+                    if not selected_model or selected_model.lower() == "auto":
                         task_list = info.task_models.get(task_category, [])
-                        config["model"] = task_list[0] if task_list else info.default_model
+                        if task_list:
+                            config["model"] = task_list[0]
+                    elif not saved_model or saved_model.lower() == "auto" or saved_model == info.default_model:
+                        task_list = info.task_models.get(task_category, [])
+                        if task_list:
+                            config["model"] = task_list[0]
 
                 if self.circuit_breaker.is_available(p_id):
                     candidates.append(config)
@@ -140,7 +175,7 @@ class ModelRouter:
 
             if "ollama" in connected:
                 ollama_cfg = dict(connected["ollama"])
-                if not ollama_cfg.get("model") or ollama_cfg.get("model") in ("qwen2.5:3b", "auto"):
+                if not selected_model or selected_model.lower() == "auto" or not ollama_cfg.get("model") or ollama_cfg.get("model") in ("qwen2.5:3b", "auto"):
                     ollama_cfg["model"] = resolved_ollama_model
                 candidates.append(ollama_cfg)
             else:
@@ -184,6 +219,64 @@ class ModelRouter:
                 candidates.insert(0, ollama_cfg)
 
         return candidates
+
+    def _parse_raw_text_tool_calls(self, text: str) -> Tuple[str, List[Dict[str, Any]]]:
+        """
+        Extracts tool calls when a model emits raw XML or text tool calls inside its response content.
+        Handles:
+          1. <tool_call> <function=name> <parameter=key> val </parameter> ... </function> </tool_call>
+          2. <tool_call> {"name": "...", "arguments": {...}} </tool_call>
+        Returns (cleaned_text, extracted_tool_calls).
+        """
+        tool_calls: List[Dict[str, Any]] = []
+        cleaned = text
+
+        # Pattern 1: XML <tool_call> <function=name> ... </function> </tool_call>
+        xml_matches = list(re.finditer(r"<tool_call>[\s\S]*?<function=([a-zA-Z0-9_]+)>([\s\S]*?)</function>[\s\S]*?</tool_call>", text, re.IGNORECASE))
+        for m in xml_matches:
+            fn_name = m.group(1).strip()
+            body = m.group(2)
+            params = {}
+            for p in re.finditer(r"<parameter=([a-zA-Z0-9_]+)>([\s\S]*?)</parameter>", body, re.IGNORECASE):
+                p_name = p.group(1).strip()
+                p_val = p.group(2).strip()
+                params[p_name] = p_val
+            tool_calls.append({
+                "id": f"call_{uuid.uuid4().hex[:24]}",
+                "type": "function",
+                "function": {
+                    "name": fn_name,
+                    "arguments": params,
+                },
+            })
+            cleaned = cleaned.replace(m.group(0), "").strip()
+
+        # Pattern 2: JSON in <tool_call> ... </tool_call>
+        json_matches = list(re.finditer(r"<tool_call>\s*(\{[\s\S]*?\})\s*</tool_call>", cleaned, re.IGNORECASE))
+        for m in json_matches:
+            try:
+                parsed = json.loads(m.group(1))
+                name = parsed.get("name") or parsed.get("function")
+                args = parsed.get("arguments") or parsed.get("parameters") or {}
+                if name:
+                    tool_calls.append({
+                        "id": f"call_{uuid.uuid4().hex[:24]}",
+                        "type": "function",
+                        "function": {
+                            "name": name,
+                            "arguments": args if isinstance(args, dict) else {},
+                        },
+                    })
+                    cleaned = cleaned.replace(m.group(0), "").strip()
+            except Exception:
+                pass
+
+        # Pattern 3: Clean any leftover or stray XML tool markup tags completely
+        cleaned = re.sub(r"<tool_call>[\s\S]*?</tool_call>", "", cleaned, flags=re.IGNORECASE).strip()
+        cleaned = re.sub(r"<function=[^>]+>[\s\S]*?</function>", "", cleaned, flags=re.IGNORECASE).strip()
+        cleaned = re.sub(r"</?(?:tool_call|function|parameter)[^>]*>", "", cleaned, flags=re.IGNORECASE).strip()
+
+        return cleaned, tool_calls
 
     async def _call_openai_compatible(
         self,
@@ -241,9 +334,17 @@ class ModelRouter:
                         },
                     })
 
+            raw_content = choice.get("content") or ""
+            # Fallback: parse models (e.g. Nemotron/DeepSeek) that emit raw <tool_call> XML tags in content
+            if not tool_calls and "<tool_call>" in raw_content:
+                cleaned_content, extracted_calls = self._parse_raw_text_tool_calls(raw_content)
+                if extracted_calls:
+                    tool_calls = extracted_calls
+                    raw_content = cleaned_content
+
             res_msg = {
                 "role": choice.get("role", "assistant"),
-                "content": choice.get("content") or "",
+                "content": raw_content,
             }
             if tool_calls:
                 res_msg["tool_calls"] = tool_calls

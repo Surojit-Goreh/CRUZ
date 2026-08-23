@@ -32,8 +32,8 @@ async def get_system_stats() -> Dict[str, Any]:
         logger.error(f"Failed to get system stats: {e}")
         return {"success": False, "error": str(e)}
 
-
 VALID_AGENT_MODES = {
+
     "auto": "Auto Dispatcher",
     "build": "Build Agent (Coding)",
     "coding": "Build Agent (Coding)",

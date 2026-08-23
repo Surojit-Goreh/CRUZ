@@ -23,7 +23,9 @@ def is_wake_word(text: str) -> bool:
     """Checks if the given transcription text matches the 'Hey Cruz' wake word."""
     if not text:
         return False
-    clean = text.strip()
+    # Strip punctuation e.g. "Hey, Cruz!" -> "Hey Cruz"
+    clean = re.sub(r"[^\w\s]", " ", text)
+    clean = re.sub(r"\s+", " ", clean).strip()
     return any(p.search(clean) for p in COMPILED_PATTERNS)
 
 
@@ -34,9 +36,11 @@ def extract_prompt_after_wake_word(text: str) -> Optional[str]:
     """
     if not text:
         return None
+    clean = re.sub(r"[^\w\s]", " ", text)
+    clean = re.sub(r"\s+", " ", clean).strip()
     for pattern in COMPILED_PATTERNS:
-        match = pattern.search(text)
+        match = pattern.search(clean)
         if match:
-            remainder = text[match.end():].strip(" ,.?!")
+            remainder = clean[match.end():].strip()
             return remainder if remainder else None
     return None

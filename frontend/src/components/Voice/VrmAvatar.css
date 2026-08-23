@@ -21,12 +21,12 @@
   overflow: hidden;
   transition: filter 0.4s ease;
 
-  /* Studio dark background with subtle atmospheric vignetting */
+  /* Studio liquid dark background with subtle atmospheric vignetting */
   background:
-    radial-gradient(ellipse at 35% 30%, rgba(90, 50, 160, 0.18) 0%, transparent 55%),
-    radial-gradient(ellipse at 70% 60%, rgba(20, 50, 120, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 100%, rgba(70, 25, 110, 0.12) 0%, transparent 40%),
-    linear-gradient(170deg, #06050e 0%, #0b0917 45%, #080612 100%);
+    radial-gradient(ellipse at 35% 30%, rgba(166, 133, 250, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 60%, rgba(94, 234, 212, 0.16) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(244, 114, 182, 0.14) 0%, transparent 40%),
+    linear-gradient(170deg, #090616 0%, #110d24 45%, #080612 100%);
 }
 
 .vrm-stage canvas {
@@ -287,3 +287,124 @@
     padding-bottom: 10px;
   }
 }
+
+/* ── Animation Debug HUD ── */
+.vrm-debug-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(18, 14, 30, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.vrm-debug-toggle:hover {
+  background: rgba(45, 30, 75, 0.85);
+  color: #fff;
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+.vrm-debug-toggle.active {
+  background: rgba(168, 85, 247, 0.35);
+  color: #d8b4fe;
+  border-color: rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+}
+
+.vrm-debug-hud {
+  position: absolute;
+  top: 42px;
+  right: 12px;
+  width: 210px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(12, 9, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  z-index: 25;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.vrm-debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.vrm-debug-fps {
+  font-size: 10px;
+  color: #4ade80;
+  font-weight: 800;
+  background: rgba(74, 222, 128, 0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.vrm-debug-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.vrm-debug-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+}
+
+.vrm-debug-label {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.vrm-debug-value {
+  color: #e2e8f0;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.vrm-debug-value.highlight {
+  color: #38bdf8;
+}
+
+.vrm-debug-value.accent {
+  color: #c084fc;
+}
+
+.vrm-debug-value.active-ik {
+  color: #34d399;
+}
+
+.vrm-debug-bar-wrap {
+  width: 70px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.vrm-debug-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #818cf8, #c084fc);
+  border-radius: 3px;
+  transition: width 0.1s linear;
+}
+

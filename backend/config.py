@@ -72,6 +72,14 @@ ZEN_MODEL = OPENCODE_MODEL
 FIRECRAWL_API_KEY = get_env("FIRECRAWL_API_KEY", "")
 FIRECRAWL_BASE_URL = get_env("FIRECRAWL_BASE_URL", "https://api.firecrawl.dev")
 
+# Groq Cloud settings
+GROQ_API_KEY = get_env("GROQ_API_KEY", "")
+GROQ_STT_MODEL = get_env("GROQ_STT_MODEL", "whisper-large-v3")  # 'whisper-large-v3', 'distil-whisper-large-v3-en'
+
+# OpenAI settings (Optional backup)
+OPENAI_API_KEY = get_env("OPENAI_API_KEY", "")
+OPENAI_STT_MODEL = get_env("OPENAI_STT_MODEL", "whisper-1")
+
 # Google AI Studio / Gemini settings
 GEMINI_API_KEY = get_env("GEMINI_API_KEY", get_env("GOOGLE_API_KEY", ""))
 GEMINI_BASE_URL = get_env("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta")
@@ -79,10 +87,15 @@ GEMINI_MODEL = get_env("GEMINI_MODEL", "gemini-3.6-flash")
 GEMINI_STT_MODEL = get_env("GEMINI_STT_MODEL", "gemini-2.5-flash")
 GEMINI_TTS_MODEL = get_env("GEMINI_TTS_MODEL", "gemini-2.5-flash-preview-tts")
 GEMINI_TTS_VOICE = get_env("GEMINI_TTS_VOICE", "Puck")  # Puck, Aoede, Fenrir, Kore, Charon
-WHISPER_MODEL = get_env("WHISPER_MODEL", "small.en")    # Offline STT model: tiny.en, base.en, small.en, medium.en
-VOICE_MODE = get_env("VOICE_MODE", "auto")  # 'auto' (online with offline fallback), 'local' (offline only), 'cloud' (cloud only)
+
+# Speech-to-Text Multi-Model & Local Settings
+STT_PROVIDER = get_env("STT_PROVIDER", "auto")            # 'auto' (multi-model cascade: Groq -> Gemini -> OpenAI -> Local), 'groq', 'gemini', 'openai', 'local'
+WHISPER_MODEL = get_env("WHISPER_MODEL", "small.en")      # Offline STT model: tiny.en, base.en, small.en, medium.en, large-v3-turbo
+WHISPER_THREADS = int(get_env("WHISPER_THREADS", str(min(os.cpu_count() or 4, 8))))
+VOICE_MODE = get_env("VOICE_MODE", "auto")                # 'auto' (online cascade with offline fallback), 'local' (offline only), 'cloud' (cloud only)
 
 # Dynamic Voice Activity Detection (VAD) timing settings
 VOICE_SILENCE_DURATION = float(get_env("VOICE_SILENCE_DURATION", "1.8"))  # Natural ~1.8s pause after speaking before responding
 VOICE_INITIAL_TIMEOUT = float(get_env("VOICE_INITIAL_TIMEOUT", "90.0"))   # Wait up to 1.5 minutes (90s) for user to speak
 VOICE_MAX_DURATION = float(get_env("VOICE_MAX_DURATION", "180.0"))        # Maximum continuous voice recording duration (3 min)
+

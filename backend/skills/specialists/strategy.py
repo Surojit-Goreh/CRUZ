@@ -1,0 +1,150 @@
+"""
+Strategy Department Specialists (X081–X090)
+Responsible for software architecture strategy, product feature planning, decision matrices,
+risk assessment, scaling, token/cost optimization, tech stack evaluation, and solution architecture.
+"""
+from typing import List
+from .models import Specialist
+
+STRATEGY_SPECIALISTS: List[Specialist] = [
+    Specialist(
+        id="X081",
+        name="Software Architecture Strategist",
+        department="Strategy",
+        role="High-Level System Design & Component Decoupling Specialist",
+        description="Defines high-level system boundaries, microservice vs monolith tradeoffs, clean architecture layers, and event-driven topologies.",
+        capabilities=["software-architecture", "system-design", "component-decoupling", "event-driven-architecture", "design-patterns"],
+        relevant_tools=["read_file"],
+        input_requirements=["product_requirements", "scaling_targets"],
+        expected_output="Architecture Blueprint document with component interaction diagrams, data contracts, and design patterns.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Design modular, maintainable software architectures that isolate concerns and enable independent scaling."
+    ),
+    Specialist(
+        id="X082",
+        name="Product Feature Planner",
+        department="Strategy",
+        role="User Stories, MVP Scoping & Feature Prioritization Specialist",
+        description="Defines user personas, writes detailed user stories with acceptance criteria, and scopes lean Minimum Viable Products (MVPs).",
+        capabilities=["product-planning", "user-stories", "mvp-scoping", "feature-prioritization", "acceptance-criteria"],
+        relevant_tools=[],
+        input_requirements=["product_vision", "user_problem"],
+        expected_output="Prioritized feature roadmap with user story specifications and MVP boundary definitions.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Focus product features relentlessly on user value, defining tight MVP scopes that deliver immediate impact."
+    ),
+    Specialist(
+        id="X083",
+        name="Decision Matrix Specialist",
+        department="Strategy",
+        role="Tradeoff Analysis, Weighted Scoring & Decision Matrices",
+        description="Creates multi-criteria decision matrices, analyzes pros/cons tradeoffs, calculates weighted scoring models, and recommends optimal paths.",
+        capabilities=["decision-matrix", "tradeoff-analysis", "weighted-scoring", "comparative-evaluation", "option-analysis"],
+        relevant_tools=[],
+        input_requirements=["decision_options", "evaluation_criteria"],
+        expected_output="Weighted decision matrix table with scoring rationales and definitive strategic recommendation.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Evaluate competing technical and product alternatives with rigorous weighted decision criteria."
+    ),
+    Specialist(
+        id="X084",
+        name="Risk Assessment Specialist",
+        department="Strategy",
+        role="Failure Mode, Security Vulnerability & Risk Mitigation Specialist",
+        description="Identifies potential single-points-of-failure, security blind spots, rate limit risks, data corruption vulnerabilities, and mitigation plans.",
+        capabilities=["risk-assessment", "fmea", "threat-modeling", "mitigation-planning", "single-point-of-failure-detection"],
+        relevant_tools=["read_file"],
+        input_requirements=["system_design_or_plan"],
+        expected_output="Risk assessment matrix with probability, severity, impact score, and concrete mitigation steps.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Proactively unearth systemic failure modes and design robust fail-safe mitigations."
+    ),
+    Specialist(
+        id="X085",
+        name="Performance & Scaling Strategist",
+        department="Strategy",
+        role="Bottleneck Diagnosis, Throughput & Scaling Strategist",
+        description="Formulates caching strategies, database read/write replica scaling, asynchronous queue topologies, and latency reduction plans.",
+        capabilities=["scaling-strategy", "bottleneck-diagnosis", "throughput-planning", "latency-optimization", "load-balancing"],
+        relevant_tools=["read_file"],
+        input_requirements=["architecture_spec", "traffic_projections"],
+        expected_output="Performance scaling roadmap with load profiles, caching topology, and throughput targets.",
+        dependencies=["X081"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Formulate architectural strategies that eliminate performance ceilings and handle traffic spikes gracefully."
+    ),
+    Specialist(
+        id="X086",
+        name="Token & Cost Optimizer",
+        department="Strategy",
+        role="Prompt Compression, Schema Pruning & Token Budget Strategist",
+        description="Optimizes system prompt token counts, prunes unnecessary JSON tool schemas per request, and maximizes API cost efficiency.",
+        capabilities=["token-optimization", "prompt-compression", "cost-reduction", "schema-pruning", "rate-limit-mitigation"],
+        relevant_tools=[],
+        input_requirements=["prompt_context", "model_catalog"],
+        expected_output="Optimized prompt payloads, filtered tool sets, and token savings metrics.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Eliminate token waste ruthlessly while preserving complete reasoning context and instruction fidelity."
+    ),
+    Specialist(
+        id="X087",
+        name="Tech Stack Evaluator",
+        department="Strategy",
+        role="Framework Benchmarks, Library Tradeoffs & Stack Selection",
+        description="Evaluates third-party libraries vs custom implementations, analyzes license compatibility (MIT/Apache/GPL), and benchmarks frameworks.",
+        capabilities=["tech-stack-evaluation", "framework-benchmarking", "license-compliance", "dependency-tradeoffs"],
+        relevant_tools=["search_web"],
+        input_requirements=["technology_options", "project_requirements"],
+        expected_output="Tech stack evaluation matrix comparing ecosystem health, performance, license, and community adoption.",
+        dependencies=["X003"],
+        required_permissions=["network_access"],
+        prompt_guidelines="Evaluate frameworks and libraries based on longevity, performance, type safety, and license compliance."
+    ),
+    Specialist(
+        id="X088",
+        name="Innovation & Growth Strategist",
+        department="Strategy",
+        role="Feature Expansion, Agentic Capabilities & User Delight",
+        description="Discovers cutting-edge AI features, novel agentic workflows, multi-modal interactions, and user delight mechanisms.",
+        capabilities=["innovation-strategy", "agentic-features", "user-delight", "growth-vectors", "feature-discovery"],
+        relevant_tools=[],
+        input_requirements=["current_capabilities", "user_feedback"],
+        expected_output="Innovation brief outlining high-impact feature opportunities and agentic differentiation ideas.",
+        dependencies=["X003"],
+        required_permissions=[],
+        prompt_guidelines="Explore ambitious, forward-thinking agentic features that transform user experience into something extraordinary."
+    ),
+    Specialist(
+        id="X089",
+        name="User Experience Strategist",
+        department="Strategy",
+        role="Cognitive Load Reduction, Heuristics & Flow Optimization",
+        description="Audits user flows for friction, applies Nielsen's 10 usability heuristics, and minimizes user cognitive load across tasks.",
+        capabilities=["ux-strategy", "cognitive-load-reduction", "usability-heuristics", "friction-audit", "flow-optimization"],
+        relevant_tools=["read_file"],
+        input_requirements=["user_flow", "ui_wireframes"],
+        expected_output="UX strategy audit with friction points identified and heuristic enhancements detailed.",
+        dependencies=["X041"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Design effortless interactions that minimize cognitive burden and provide immediate, delightful feedback."
+    ),
+    Specialist(
+        id="X090",
+        name="Solution Architect",
+        department="Strategy",
+        role="End-to-End System Integration & Hybrid Deployment Architect",
+        description="Synthesizes business requirements, hardware constraints, local vs cloud AI routing, and delivers complete solution designs.",
+        capabilities=["solution-architecture", "hybrid-deployments", "end-to-end-integration", "system-synthesis"],
+        relevant_tools=["read_file"],
+        input_requirements=["full_project_scope"],
+        expected_output="Comprehensive Solution Architecture Document uniting frontend, backend, AI routing, and desktop layers.",
+        dependencies=["X081", "X083"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Unify all system subcomponents into an integrated, elegant, and rock-solid solution architecture."
+    ),
+]

@@ -1,0 +1,150 @@
+"""
+Coding Department Specialists (X011–X020)
+Responsible for software engineering, frontend/backend architecture,
+database optimization, debugging, refactoring, security auditing, and test automation.
+"""
+from typing import List
+from .models import Specialist
+
+CODING_SPECIALISTS: List[Specialist] = [
+    Specialist(
+        id="X011",
+        name="Python Developer",
+        department="Coding",
+        role="Async Python & Backend Microservice Engineer",
+        description="Expert in Python, FastAPI, asyncio, type hints, Pydantic data schemas, and backend core architecture.",
+        capabilities=["python", "fastapi", "asyncio", "pydantic", "backend-services", "scripting"],
+        relevant_tools=["read_file", "write_file", "list_directory", "search_files", "run_terminal_command"],
+        input_requirements=["code_task_spec", "file_context"],
+        expected_output="Clean, type-annotated, runnable Python code with complete docstrings.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write", "terminal_exec"],
+        prompt_guidelines="Write production-ready, highly efficient Python code using modern idioms, strict typing, and full error handling."
+    ),
+    Specialist(
+        id="X012",
+        name="Frontend Engineer",
+        department="Coding",
+        role="React, TypeScript & Modern Web UI Developer",
+        description="Builds responsive, high-performance UI components in React, TypeScript, Vite, CSS design systems, and WebSockets.",
+        capabilities=["react", "typescript", "vite", "css", "state-management", "ui-components"],
+        relevant_tools=["read_file", "write_file", "list_directory", "run_terminal_command"],
+        input_requirements=["ui_spec", "component_context"],
+        expected_output="Polished React/TypeScript components with clean type definitions and CSS styling.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Craft sleek, responsive React components with strict TypeScript types, accessible semantics, and modular styles."
+    ),
+    Specialist(
+        id="X013",
+        name="Backend Architect",
+        department="Coding",
+        role="API Design & Distributed Systems Architect",
+        description="Architects REST/WebSocket APIs, server lifecycle routines, data pipelines, and service boundaries.",
+        capabilities=["api-architecture", "rest", "websockets", "microservices", "concurrency", "server-design"],
+        relevant_tools=["read_file", "write_file", "list_directory"],
+        input_requirements=["system_spec", "architecture_goals"],
+        expected_output="Robust backend architectures, endpoints, middleware, and data flow patterns.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Design scalable, fault-tolerant backend architectures with clear separation of concerns and resilient error paths."
+    ),
+    Specialist(
+        id="X014",
+        name="Database Specialist",
+        department="Coding",
+        role="SQL, Data Modeling & Migration Engineer",
+        description="Designs relational schemas, writes complex SQL queries, executes migrations, and optimizes indices in SQLite and PostgreSQL.",
+        capabilities=["sql", "sqlite", "postgresql", "data-modeling", "migrations", "query-optimization"],
+        relevant_tools=["read_file", "write_file", "run_terminal_command"],
+        input_requirements=["schema_spec", "data_requirements"],
+        expected_output="Optimized SQL schemas, migration scripts, and performant indexed queries.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write", "database_access"],
+        prompt_guidelines="Ensure clean relational normalization, ACID guarantees, transaction safety, and index-optimized query execution."
+    ),
+    Specialist(
+        id="X015",
+        name="DevOps & Cloud Engineer",
+        department="Coding",
+        role="Containerization, CI/CD & Environment Specialist",
+        description="Manages Docker containers, environment configurations (.env), process supervisors, and deployment workflows.",
+        capabilities=["docker", "devops", "ci-cd", "environment-config", "process-management", "cloud"],
+        relevant_tools=["read_file", "write_file", "run_terminal_command"],
+        input_requirements=["deploy_spec", "env_requirements"],
+        expected_output="Dockerfile, docker-compose, CI/CD pipelines, and robust environment scripts.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write", "terminal_exec"],
+        prompt_guidelines="Automate reproducible builds, container health checks, environment isolation, and clean process supervision."
+    ),
+    Specialist(
+        id="X016",
+        name="Security & Auth Auditor",
+        department="Coding",
+        role="Security Hardening, Auth & Vulnerability Auditor",
+        description="Audits codebase for path traversal, injection vulnerabilities, token storage, CORS policies, and sandbox escapes.",
+        capabilities=["security-audit", "vulnerability-scanning", "auth-tokens", "sandbox-enforcement", "input-sanitization"],
+        relevant_tools=["read_file", "search_files"],
+        input_requirements=["code_to_audit"],
+        expected_output="Security audit report with remediation patches and hardened safety constraints.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read"],
+        prompt_guidelines="Identify potential attack surfaces, enforce strict input sanitization, and eliminate security flaws proactively."
+    ),
+    Specialist(
+        id="X017",
+        name="Debugger & Troubleshooter",
+        department="Coding",
+        role="Runtime Traceback & Crash Resolution Specialist",
+        description="Analyzes stack traces, identifies root causes of runtime exceptions, fixes race conditions, and eliminates edge-case bugs.",
+        capabilities=["debugging", "traceback-analysis", "exception-fixing", "race-condition-resolution", "root-cause-analysis"],
+        relevant_tools=["read_file", "write_file", "search_files", "run_terminal_command"],
+        input_requirements=["error_logs", "affected_files"],
+        expected_output="Targeted code fixes addressing root causes with regression prevention.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write", "terminal_exec"],
+        prompt_guidelines="Trace the exact root cause of bugs with surgical precision, applying minimal and resilient fixes without side-effects."
+    ),
+    Specialist(
+        id="X018",
+        name="Refactoring Specialist",
+        department="Coding",
+        role="Code Clean-Up & Architecture Modernizer",
+        description="Simplifies spaghetti code, extracts reusable abstractions, adheres to SOLID principles, and eliminates tech debt.",
+        capabilities=["refactoring", "clean-code", "solid-principles", "modularization", "tech-debt-elimination"],
+        relevant_tools=["read_file", "write_file", "search_files"],
+        input_requirements=["legacy_code", "refactoring_goals"],
+        expected_output="Refactored, modular code retaining 100% backward compatibility.",
+        dependencies=["X003"],
+        required_permissions=["filesystem_read", "filesystem_write"],
+        prompt_guidelines="Enhance code readability, reduce cognitive complexity, and eliminate duplicated logic while preserving behavior."
+    ),
+    Specialist(
+        id="X019",
+        name="Test Automation Engineer",
+        department="Coding",
+        role="Unit, Integration & API Test Suite Engineer",
+        description="Creates comprehensive pytest suites, mock fixtures, edge-case unit tests, and automated assertion pipelines.",
+        capabilities=["testing", "pytest", "unit-tests", "integration-tests", "test-assertions", "mocking"],
+        relevant_tools=["read_file", "write_file", "run_terminal_command"],
+        input_requirements=["target_module", "test_specifications"],
+        expected_output="Complete, passing pytest test suites covering edge cases and happy paths.",
+        dependencies=["X011"],
+        required_permissions=["filesystem_read", "filesystem_write", "terminal_exec"],
+        prompt_guidelines="Write thorough automated test suites with clear assertions, isolated mock fixtures, and high test coverage."
+    ),
+    Specialist(
+        id="X020",
+        name="Systems & Performance Engineer",
+        department="Coding",
+        role="Concurrency, Latency & Memory Optimizer",
+        description="Profiles CPU/memory consumption, optimizes async event loops, reduces latency in streaming pipelines, and cleans resource leaks.",
+        capabilities=["performance-optimization", "profiling", "latency-reduction", "memory-management", "concurrency"],
+        relevant_tools=["read_file", "write_file", "run_terminal_command"],
+        input_requirements=["code_profile", "latency_targets"],
+        expected_output="Optimized algorithms, non-blocking I/O routines, and benchmarked speed improvements.",
+        dependencies=["X011"],
+        required_permissions=["filesystem_read", "filesystem_write", "terminal_exec"],
+        prompt_guidelines="Eliminate performance bottlenecks, avoid blocking operations in async loops, and maximize resource efficiency."
+    ),
+]

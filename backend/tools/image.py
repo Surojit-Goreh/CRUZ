@@ -114,6 +114,12 @@ def generate_image(prompt: str, aspect_ratio: str = "1:1", enhance: bool = True)
         )
         engine_name = "Flux Web"
 
+    try:
+        from services.model_router import model_router
+        model_router.record_used_model("Flux AI", engine_name, role="Image Generation", provider_id="flux")
+    except Exception:
+        pass
+
     markdown_image = f"![{clean_prompt}]({local_url})"
     return (
         f"Generated high-quality HD image ({aspect_ratio} • {engine_name}):\n\n"

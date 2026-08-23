@@ -35,6 +35,7 @@ CRUZ is an autonomous, multimodal, hands-free AI assistant designed for pair pro
   * Natural weight-shifted contrapposto standing posture.
   * State-aware head movements: attentive listening tilts, thoughtful upward pensive angles, and rhythmic conversational nodding during speech.
   * Idle eye blinking with randomized timing.
+* **Detailed Technical Spec & Benchmarks**: See [`docs/VRM_AVATAR_AND_RESOURCES.md`](VRM_AVATAR_AND_RESOURCES.md) for full procedural math, lighting setup, and system resource profiling.
 
 ### B. Natural Voice & Wake Word Engine
 * **Hands-Free "Hey Cruz" Wake Word**:

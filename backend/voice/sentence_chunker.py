@@ -1,5 +1,5 @@
 import re
-from typing import AsyncIterator, List, Tuple
+from typing import AsyncIterator, List, Tuple, Any
 
 # Common abbreviations that should not trigger premature sentence boundaries
 HONORIFICS = {
@@ -157,21 +157,39 @@ def extract_completed_sentences(text: str) -> Tuple[List[str], str]:
 
 
 
-async def stream_sentences(token_stream: AsyncIterator[str]) -> AsyncIterator[str]:
+import re
+
+
+def clean_text_for_tts(text: str) -> str:
+    """Strips raw XML markup, code blocks, think tags, or tool tags before sending to TTS."""
+    if not text:
+        return ""
+    clean = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
+    clean = re.sub(r"</?think>", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"<tool_call>[\s\S]*?</tool_call>", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"<function=[^>]+>[\s\S]*?</function>", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"</?(?:tool_call|function|parameter)[^>]*>", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"```[\s\S]*?```", "code block omitted", clean)
+    return clean.strip()
+
+
+async def stream_sentences(token_stream: AsyncIterator[Any]) -> AsyncIterator[str]:
     """
     Consumes an async generator of text tokens, buffers them into sentences,
-    and yields each complete sentence as soon as it is formed.
+    sanitizes markup, and yields each complete spoken sentence as soon as it is formed.
     Flushes remaining text when the token stream finishes.
     """
     chunker = SentenceChunker()
     async for token in token_stream:
-        if not token:
+        if not token or not isinstance(token, str):
             continue
         sentences = chunker.add_token(token)
         for sentence in sentences:
-            if sentence:
-                yield sentence
+            cleaned = clean_text_for_tts(sentence)
+            if cleaned:
+                yield cleaned
 
     for sentence in chunker.flush():
-        if sentence:
-            yield sentence
+        cleaned = clean_text_for_tts(sentence)
+        if cleaned:
+            yield cleaned

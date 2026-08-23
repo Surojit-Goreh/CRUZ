@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import type { Message } from "../types/chat";
+import type { Message, ActivityEvent, ActivityState } from "../types/chat";
 import useWakeWord from "./useWakeWord";
 
 export type VoiceState =
@@ -70,6 +70,8 @@ function detectClientAgentMode(text: string): string | null {
 export default function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [activityState, setActivityState] = useState<ActivityState | null>(null);
   const [agentMode, setAgentMode] = useState<string>("auto");
   const [selectedModel, setSelectedModel] = useState<string>("auto");
 
@@ -82,6 +84,7 @@ export default function useChat() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const continuousTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const connectRef = useRef<() => void>(() => undefined);
   const continuousModeRef = useRef(continuousMode);
@@ -116,7 +119,19 @@ export default function useChat() {
     ]);
   }, []);
 
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsTyping(false);
+    setIsGenerating(false);
+    setActivityState(null);
+  }, []);
+
   // --- Typed Chat Streaming ---
+
+
   const sendMessage = useCallback(
     async (text: string, explicitAgentMode?: string, explicitModel?: string) => {
       if (!text.trim()) return;
@@ -128,16 +143,43 @@ export default function useChat() {
 
       addUserMessage(text);
       setIsTyping(true);
+      setIsGenerating(true);
+
+      // Immediately show initial high-level thinking state
+      const initialStepId = `step_${Date.now()}`;
+      setActivityState({
+        status: "processing",
+        currentMessage: "Understanding request...",
+        phase: "understanding",
+        progress: 10,
+        steps: [
+          {
+            id: initialStepId,
+            message: "Understanding request...",
+            phase: "understanding",
+            completed: false,
+            timestamp: Date.now(),
+          },
+        ],
+      });
 
       const aiId = makeId();
       let streamStarted = false;
       const targetMode = explicitAgentMode || clientDetectedMode || agentModeRef.current || "auto";
       const targetModel = explicitModel || selectedModelRef.current || "auto";
 
+      // Abort previous in-flight request if any
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       try {
         const response = await fetch("http://127.0.0.1:8000/chat/stream", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             message: text,
             agent_mode: targetMode,
@@ -161,6 +203,8 @@ export default function useChat() {
         let eventBuffer = "";
         let liveProvider: string | undefined;
         let liveModel: string | undefined;
+        let livePlan: any | undefined;
+        let liveModelsUsed: any[] = [];
 
         const handleSseEvent = (rawEvent: string) => {
           const lines = rawEvent.split("\n");
@@ -174,13 +218,58 @@ export default function useChat() {
 
           try {
             const parsed = JSON.parse(dataStr);
-            if (eventType === "metadata") {
+
+            if (eventType === "plan") {
+              livePlan = parsed;
+              setMessages((prev) =>
+                prev.map((m) => (m.id === aiId ? { ...m, plan: livePlan } : m))
+              );
+            } else if (eventType === "activity") {
+              const act = parsed as ActivityEvent;
+              setActivityState((prev) => {
+                const prevSteps = prev ? [...prev.steps] : [];
+                // Mark previous step as completed if message or phase changed
+                const updatedSteps = prevSteps.map((s, idx) =>
+                  idx === prevSteps.length - 1 ? { ...s, completed: true } : s
+                );
+                const nextStepId = `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+                const lastStep = updatedSteps[updatedSteps.length - 1];
+                if (!lastStep || lastStep.message !== act.message) {
+                  updatedSteps.push({
+                    id: nextStepId,
+                    message: act.message,
+                    specialist: act.specialist,
+                    phase: act.phase,
+                    completed: false,
+                    timestamp: Date.now(),
+                  });
+                }
+                return {
+                  execution_id: act.execution_id,
+                  status: "processing",
+                  currentMessage: act.message,
+                  phase: act.phase,
+                  specialist: act.specialist,
+                  progress: act.progress,
+                  steps: updatedSteps,
+                };
+              });
+            } else if (eventType === "metadata") {
               liveProvider = parsed.provider_name || "";
               liveModel = parsed.model || "";
+              if (parsed.models_used && Array.isArray(parsed.models_used)) {
+                liveModelsUsed = parsed.models_used;
+              }
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === aiId
-                    ? { ...m, provider: liveProvider, model: liveModel }
+                    ? {
+                        ...m,
+                        provider: liveProvider,
+                        model: liveModel,
+                        plan: livePlan,
+                        models_used: liveModelsUsed.length > 0 ? liveModelsUsed : m.models_used,
+                      }
                     : m
                 )
               );
@@ -189,6 +278,8 @@ export default function useChat() {
               if (!streamStarted) {
                 streamStarted = true;
                 setIsTyping(false);
+                // As soon as the final response tokens begin streaming, clean up the temporary thinking UI
+                setActivityState(null);
                 setMessages((prev) => [
                   ...prev,
                   {
@@ -198,6 +289,8 @@ export default function useChat() {
                     timestamp: nowTime(),
                     provider: liveProvider,
                     model: liveModel,
+                    plan: livePlan,
+                    models_used: liveModelsUsed,
                   },
                 ]);
               } else {
@@ -209,12 +302,21 @@ export default function useChat() {
                           text: m.text + chunkText,
                           provider: liveProvider || m.provider,
                           model: liveModel || m.model,
+                          plan: livePlan || m.plan,
+                          models_used: liveModelsUsed.length > 0 ? liveModelsUsed : m.models_used,
                         }
                       : m
                   )
                 );
               }
+            } else if (eventType === "done") {
+              setIsTyping(false);
+              setIsGenerating(false);
+              setActivityState(null);
             } else if (eventType === "error") {
+              setIsTyping(false);
+              setIsGenerating(false);
+              setActivityState(null);
               throw new Error(parsed as string);
             }
           } catch (err) {
@@ -239,27 +341,55 @@ export default function useChat() {
         }
 
         setIsTyping(false);
-      } catch (error) {
+        setIsGenerating(false);
+        setActivityState(null);
+      } catch (error: any) {
+        if (error?.name === "AbortError") {
+          console.log("Chat generation was stopped by user.");
+          setIsTyping(false);
+          setIsGenerating(false);
+          setActivityState(null);
+          return;
+        }
+
         console.error("Failed to stream AI response:", error);
         setIsTyping(false);
+        setIsGenerating(false);
+        setActivityState(null);
         setMessages((prev) => [
           ...prev,
           {
             id: aiId,
             sender: "assistant",
-            text: error instanceof Error ? error.message : "Backend connection failed.",
+            text: error instanceof Error ? error.message : "Unable to complete request. Please try again.",
             timestamp: nowTime(),
           },
         ]);
+      } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
       }
     },
     [addUserMessage]
   );
 
 
-  const startVoiceTurn = useCallback(() => {
+  const startVoiceTurn = useCallback((prompt?: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ action: "start_turn" }));
+      if (prompt && prompt.trim()) {
+        console.log(`🎤 Immediate voice turn with prompt: "${prompt.trim()}"`);
+        wsRef.current.send(
+          JSON.stringify({
+            action: "chat_voice",
+            message: prompt.trim(),
+            agent_mode: agentModeRef.current || "auto",
+          })
+        );
+      } else {
+        console.log("🎤 Starting live microphone listening turn...");
+        wsRef.current.send(JSON.stringify({ action: "start_turn" }));
+      }
     } else {
       console.warn("Voice WebSocket not connected");
     }
@@ -273,6 +403,10 @@ export default function useChat() {
   }, []);
 
   const voiceMsgIdRef = useRef<string | null>(null);
+
+
+  const voicePlanRef = useRef<any | null>(null);
+  const voiceModelsUsedRef = useRef<any[]>([]);
 
   // --- Voice WebSocket ---
   const connect = useCallback(() => {
@@ -291,6 +425,7 @@ export default function useChat() {
       if (!isCurrent()) return;
       setConnected(false);
       setIsTyping(false);
+      setActivityState(null);
       voiceMsgIdRef.current = null;
       if (mountedRef.current) {
         reconnectTimerRef.current = setTimeout(() => connectRef.current(), RECONNECT_DELAY_MS);
@@ -312,10 +447,61 @@ export default function useChat() {
         return;
       }
 
+      if (data.state === "plan" || (data.plan && !data.state)) {
+        voicePlanRef.current = data.plan;
+        if (voiceMsgIdRef.current) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === voiceMsgIdRef.current ? { ...m, plan: data.plan } : m
+            )
+          );
+        }
+        return;
+      }
+
+      if (data.state === "activity" || data.event_type) {
+        const act = data;
+        setActivityState((prev) => {
+          const prevSteps = prev ? [...prev.steps] : [];
+          const updatedSteps = prevSteps.map((s, idx) =>
+            idx === prevSteps.length - 1 ? { ...s, completed: true } : s
+          );
+          const nextStepId = `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+          const lastStep = updatedSteps[updatedSteps.length - 1];
+          if (!lastStep || lastStep.message !== act.message) {
+            updatedSteps.push({
+              id: nextStepId,
+              message: act.message,
+              specialist: act.specialist,
+              phase: act.phase,
+              completed: false,
+              timestamp: Date.now(),
+            });
+          }
+          return {
+            execution_id: act.execution_id,
+            status: "processing",
+            currentMessage: act.message,
+            phase: act.phase,
+            specialist: act.specialist,
+            progress: act.progress,
+            steps: updatedSteps,
+          };
+        });
+        return;
+      }
+
       if (data.state === "result") {
-        const result = data as TurnResult & { agent_mode?: string; provider?: string; model?: string };
+        const result = data as TurnResult & {
+          agent_mode?: string;
+          provider?: string;
+          model?: string;
+          plan?: any;
+          models_used?: any[];
+        };
         setVoiceState("idle");
         setIsTyping(false);
+        setActivityState(null);
 
         if (result.agent_mode) {
           setAgentMode(result.agent_mode);
@@ -323,6 +509,8 @@ export default function useChat() {
 
         const resProvider = result.provider;
         const resModel = result.model;
+        const resPlan = result.plan || voicePlanRef.current;
+        const resModels = result.models_used || voiceModelsUsedRef.current;
 
         if (voiceMsgIdRef.current && result.reply) {
           setMessages((prev) =>
@@ -333,12 +521,27 @@ export default function useChat() {
                     text: result.reply,
                     provider: resProvider || m.provider,
                     model: resModel || m.model,
+                    plan: resPlan || m.plan,
+                    models_used: resModels.length > 0 ? resModels : m.models_used,
                   }
                 : m
             )
           );
         } else if (!voiceMsgIdRef.current && result.reply && result.success) {
-          addAssistantMessage(result.reply, resProvider, resModel);
+          const newId = makeId();
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: newId,
+              sender: "assistant",
+              text: result.reply,
+              timestamp: nowTime(),
+              provider: resProvider,
+              model: resModel,
+              plan: resPlan,
+              models_used: resModels,
+            },
+          ]);
         }
         voiceMsgIdRef.current = null;
 
@@ -371,20 +574,39 @@ export default function useChat() {
         return;
       }
 
-      const event = data as VoiceEvent & { text?: string; audio?: string; sentence_index?: number; provider?: string; model?: string; agent_mode?: string };
+      const event = data as VoiceEvent & {
+        text?: string;
+        audio?: string;
+        sentence_index?: number;
+        provider?: string;
+        model?: string;
+        agent_mode?: string;
+        plan?: any;
+        models_used?: any[];
+      };
       setVoiceState(event.state);
 
       if (event.state === "thinking" || event.state === "transcribing") {
         voiceMsgIdRef.current = null;
+        voicePlanRef.current = null;
+        voiceModelsUsedRef.current = [];
         if (event.transcript) {
           addUserMessage(event.transcript);
         }
         setIsTyping(true);
       } else if (event.state === "speaking") {
         setIsTyping(false);
+        setActivityState(null);
+        if (event.plan) voicePlanRef.current = event.plan;
+        if (event.models_used && Array.isArray(event.models_used)) {
+          voiceModelsUsedRef.current = event.models_used;
+        }
+
         const replyText = event.reply || event.text || "";
         const eventProvider = event.provider;
         const eventModel = event.model;
+        const eventPlan = event.plan || voicePlanRef.current;
+        const eventModels = (event.models_used && event.models_used.length > 0) ? event.models_used : voiceModelsUsedRef.current;
 
         if (replyText) {
           if (!voiceMsgIdRef.current) {
@@ -399,6 +621,8 @@ export default function useChat() {
                 timestamp: nowTime(),
                 provider: eventProvider,
                 model: eventModel,
+                plan: eventPlan,
+                models_used: eventModels,
               },
             ]);
           } else {
@@ -410,6 +634,8 @@ export default function useChat() {
                       text: replyText,
                       provider: eventProvider || m.provider,
                       model: eventModel || m.model,
+                      plan: eventPlan || m.plan,
+                      models_used: eventModels.length > 0 ? eventModels : m.models_used,
                     }
                   : m
               )
@@ -418,6 +644,7 @@ export default function useChat() {
         }
       } else if (event.state === "idle") {
         setIsTyping(false);
+        setActivityState(null);
         voiceMsgIdRef.current = null;
       }
     };
@@ -465,6 +692,9 @@ export default function useChat() {
     messages,
     sendMessage,
     isTyping,
+    isGenerating,
+    activityState,
+    stopGeneration,
     connected,
     voiceState,
     startVoiceTurn,
